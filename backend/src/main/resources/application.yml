@@ -1,0 +1,62 @@
+# =============================================================================
+# DataPipeline Application Configuration
+# =============================================================================
+
+server:
+  port: 8080
+
+spring:
+  application:
+    name: data-pipeline
+
+  threads:
+    virtual:
+      enabled: true
+
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://149.88.74.178:3306/data_pipeline?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: "123456"
+
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+
+  data:
+    redis:
+      host: 149.88.74.178
+      port: 6379
+      password: "123456"
+      database: 0
+      timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+# JWT 配置
+jwt:
+  secret: DataPipelineSecretKey2024AntigravityTeamJWTSecretKeyMustBe256BitsLong!
+  expiration: 604800  # 7天（秒）
+
+mybatis:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.antigravity.module
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  level:
+    root: INFO
+    com.antigravity: DEBUG
