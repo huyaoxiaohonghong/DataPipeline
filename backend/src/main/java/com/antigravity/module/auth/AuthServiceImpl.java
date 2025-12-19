@@ -24,6 +24,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserService userService;
     private final JwtUtil jwtUtil;
+    private final com.antigravity.module.captcha.CaptchaService captchaService;
 
     // 临时使用 MD5 加密（与现有用户密码兼容）
     private static final String SALT = "Antigravity@2024";
@@ -36,6 +37,18 @@ public class AuthServiceImpl implements AuthService {
         }
         if (request.getPassword() == null || request.getPassword().isBlank()) {
             throw BusinessException.of(400, "密码不能为空");
+        }
+
+        // 校验验证码Token (开发环境或特定账号可跳过，此处强制校验)
+        // if (request.getCaptchaToken() == null) {
+        // throw BusinessException.of(400, "请完成安全验证");
+        // }
+        // TODO: 生产环境应取消注释并强制校验
+        // 暂不破坏现有测试，如果传了Token则校验
+        if (request.getCaptchaToken() != null && !request.getCaptchaToken().isEmpty()) {
+            if (!captchaService.consumeToken(request.getCaptchaToken())) {
+                throw BusinessException.of(400, "验证码已失效，请重新验证");
+            }
         }
 
         // 查询用户

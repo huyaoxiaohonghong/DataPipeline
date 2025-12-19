@@ -6,6 +6,25 @@ import { get, post } from '@/utils/request'
 export interface LoginRequest {
   username: string
   password: string
+  captchaToken?: string
+}
+
+export interface CaptchaResponse {
+  captchaId: string
+  backgroundImage: string
+  sliderImage: string
+  sliderY: number
+}
+
+export interface CaptchaVerifyRequest {
+  captchaId: string
+  sliderX: number
+}
+
+export interface CaptchaVerifyResponse {
+  success: boolean
+  token: string
+  message: string
 }
 
 /**
@@ -45,5 +64,19 @@ export const authApi = {
    */
   getCurrentUser() {
     return get<LoginResponse>(`${BASE_URL}/me`)
+  },
+
+  /**
+   * 获取验证码
+   */
+  getCaptcha() {
+    return get<CaptchaResponse>('/v1/captcha/generate')
+  },
+
+  /**
+   * 校验验证码
+   */
+  verifyCaptcha(data: CaptchaVerifyRequest) {
+    return post<CaptchaVerifyResponse>('/v1/captcha/verify', data)
   }
 }

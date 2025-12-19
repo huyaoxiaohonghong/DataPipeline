@@ -15,4 +15,9 @@ public class LoginRequest {
     @NotBlank(message = "密码不能为空")
     private String password;
 
+    /**
+     * 验证通过后的Token
+     */
+    private String captchaToken;
+
 }

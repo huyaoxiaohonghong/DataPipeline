@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { UserOutlined, LockOutlined } from '@ant-design/icons-vue'
 import { useUserStore } from '@/stores/user'
+import SlideCaptcha from '@/components/SlideCaptcha/index.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -19,9 +20,11 @@ const formState = reactive({
 // 表单引用
 const formRef = ref()
 const loading = ref(false)
+const captchaVisible = ref(false)
+const captchaRef = ref()
 
 // 表单验证规则
-const rules = {
+const rules: Record<string, any> = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' }
   ],
@@ -34,11 +37,24 @@ const rules = {
 const handleLogin = async () => {
   try {
     await formRef.value.validate()
-    
-    loading.value = true
-    
-    // 调用登录 API
-    await userStore.login(formState.username, formState.password)
+    // 验证通过，显示验证码
+    captchaVisible.value = true
+    if (captchaRef.value) {
+      captchaRef.value.refresh()
+    }
+  } catch (error) {
+    console.error('表单验证失败:', error)
+  }
+}
+
+// 验证码通过回调
+const handleCaptchaSuccess = async (token: string) => {
+  captchaVisible.value = false
+  loading.value = true
+  
+  try {
+    // 调用登录 API，传入验证码 token
+    await userStore.login(formState.username, formState.password, token)
     
     message.success('登录成功')
     
@@ -47,9 +63,9 @@ const handleLogin = async () => {
     router.push(redirect || '/')
   } catch (error: any) {
     if (!error.errorFields) {
-      // 非表单验证错误已在拦截器中处理
       console.error('登录失败:', error)
     }
+    // 登录失败不用恢复验证码弹窗，因为需要重新点击登录
   } finally {
     loading.value = false
   }
@@ -124,6 +140,22 @@ const handleLogin = async () => {
         <p>演示账号：admin / 123456</p>
       </div>
     </div>
+    
+    <!-- 验证码弹窗 -->
+    <a-modal
+      v-model:visible="captchaVisible"
+      :footer="null"
+      :width="380"
+      :closable="false"
+      centered
+      dialog-class="captcha-modal"
+    >
+      <SlideCaptcha 
+        ref="captchaRef"
+        @success="handleCaptchaSuccess" 
+        @close="captchaVisible = false" 
+      />
+    </a-modal>
 
     <!-- 背景装饰 -->
     <div class="login-bg">

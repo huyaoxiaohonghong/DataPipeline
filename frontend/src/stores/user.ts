@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { authApi, type LoginResponse } from '@/api/auth'
+import { authApi } from '@/api/auth'
 import { setToken, removeToken } from '@/utils/request'
 import router from '@/router'
 
@@ -25,8 +25,8 @@ export const useUserStore = defineStore('user', () => {
     /**
      * 登录
      */
-    async function login(loginUsername: string, password: string) {
-        const { data } = await authApi.login({ username: loginUsername, password })
+    async function login(loginUsername: string, password: string, captchaToken?: string) {
+        const { data } = await authApi.login({ username: loginUsername, password, captchaToken })
 
         // 保存 Token
         token.value = data.token
@@ -108,6 +108,6 @@ export const useUserStore = defineStore('user', () => {
     persist: {
         key: 'data-pipeline-user',
         storage: localStorage,
-        pick: ['token', 'userId', 'username', 'role']
+        paths: ['token', 'userId', 'username', 'role']
     }
 })
