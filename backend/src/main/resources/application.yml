@@ -14,21 +14,17 @@ spring:
       enabled: true
 
   datasource:
-    type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://149.88.74.178:3306/data_pipeline?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
     password: "123456"
-
-    druid:
-      initial-size: 5
-      min-idle: 5
-      max-active: 20
-      max-wait: 60000
-      validation-query: SELECT 1
-      test-while-idle: true
-      test-on-borrow: false
-      test-on-return: false
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 60000
+      connection-test-query: SELECT 1
 
   data:
     redis:
@@ -49,12 +45,19 @@ jwt:
   secret: DataPipelineSecretKey2024AntigravityTeamJWTSecretKeyMustBe256BitsLong!
   expiration: 604800  # 7天（秒）
 
-mybatis:
+mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.antigravity.module
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      table-prefix: sys_
 
 logging:
   level:

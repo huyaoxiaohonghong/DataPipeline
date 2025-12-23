@@ -26,10 +26,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <mybatis.version>4.0.0</mybatis.version>
+        <mybatis-plus.version>3.5.15</mybatis-plus.version>
         <mysql-connector.version>8.3.0</mysql-connector.version>
         <lombok.version>1.18.42</lombok.version>
-        <druid.version>1.2.23</druid.version>
     </properties>
 
     <dependencies>
@@ -51,11 +50,24 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
-        <!-- MyBatis Spring Boot Starter -->
+        <!-- Spring Boot JDBC Starter (for DataSource auto-configuration) -->
         <dependency>
-            <groupId>org.mybatis.spring.boot</groupId>
-            <artifactId>mybatis-spring-boot-starter</artifactId>
-            <version>${mybatis.version}</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+
+        <!-- MyBatis-Plus Spring Boot 4 Starter (for Spring Boot 4.0 / Spring Framework 7.0) -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot4-starter</artifactId>
+            <version>${mybatis-plus.version}</version>
+        </dependency>
+
+        <!-- MyBatis-Plus JSqlParser (required for PaginationInnerInterceptor since 3.5.9) -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+            <version>${mybatis-plus.version}</version>
         </dependency>
 
         <!-- MySQL Connector -->
@@ -66,12 +78,7 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Druid Connection Pool -->
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>druid-spring-boot-starter</artifactId>
-            <version>${druid.version}</version>
-        </dependency>
+        <!-- HikariCP Connection Pool is included by default in spring-boot-starter-jdbc -->
 
         <!-- Lombok -->
         <dependency>

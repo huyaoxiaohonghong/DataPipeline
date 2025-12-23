@@ -170,7 +170,7 @@ public class PermissionController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> delete(@PathVariable @Min(value = 1, message = "ID 必须大于 0") Long id) {
-        boolean success = permissionService.deleteById(id);
+        boolean success = permissionService.deletePermission(id);
         return success ? Result.success("权限删除成功", null) : Result.error("权限删除失败");
     }
 
@@ -180,7 +180,7 @@ public class PermissionController {
     @DeleteMapping("/batch")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> batchDelete(@RequestBody @NotEmpty(message = "请选择要删除的权限") List<Long> ids) {
-        boolean success = permissionService.deleteByIds(ids);
+        boolean success = permissionService.deletePermissions(ids);
         return success ? Result.success("批量删除成功", null) : Result.error("批量删除失败");
     }
 

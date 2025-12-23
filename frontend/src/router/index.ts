@@ -35,6 +35,12 @@ const routes: RouteRecordRaw[] = [
                 name: 'PermissionList',
                 component: () => import('@/views/permission/PermissionList.vue'),
                 meta: { title: '权限管理', icon: 'SafetyOutlined' }
+            },
+            {
+                path: 'db-connections',
+                name: 'DbConnectionList',
+                component: () => import('@/views/db/DbConnectionList.vue'),
+                meta: { title: '数据库管理', icon: 'DatabaseOutlined' }
             }
         ]
     },

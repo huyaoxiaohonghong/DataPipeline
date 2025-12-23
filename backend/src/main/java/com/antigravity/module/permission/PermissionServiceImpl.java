@@ -1,7 +1,9 @@
 package com.antigravity.module.permission;
 
 import com.antigravity.module.permission.mapper.PermissionMapper;
-import lombok.RequiredArgsConstructor;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,50 +21,63 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
-public class PermissionServiceImpl implements PermissionService {
-
-    private final PermissionMapper permissionMapper;
+public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permission> implements PermissionService {
 
     @Override
     public Optional<Permission> findById(Long id) {
-        return Optional.ofNullable(permissionMapper.selectById(id));
+        return Optional.ofNullable(this.getById(id));
     }
 
     @Override
     public Optional<Permission> findByCode(String code) {
-        return Optional.ofNullable(permissionMapper.selectByCode(code));
+        LambdaQueryWrapper<Permission> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Permission::getCode, code);
+        return Optional.ofNullable(this.getOne(wrapper));
     }
 
     @Override
     public List<Permission> findAll() {
-        return permissionMapper.selectAll();
+        LambdaQueryWrapper<Permission> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByAsc(Permission::getSort)
+                .orderByDesc(Permission::getCreateTime);
+        return this.list(wrapper);
     }
 
     @Override
     public List<Permission> findByParentId(Long parentId) {
-        return permissionMapper.selectByParentId(parentId);
+        LambdaQueryWrapper<Permission> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Permission::getParentId, parentId)
+                .orderByAsc(Permission::getSort);
+        return this.list(wrapper);
     }
 
     @Override
     public List<Permission> findByType(String type) {
-        return permissionMapper.selectByType(type);
+        LambdaQueryWrapper<Permission> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Permission::getType, type)
+                .orderByAsc(Permission::getSort);
+        return this.list(wrapper);
     }
 
     @Override
     public List<Permission> findEnabled() {
-        return permissionMapper.selectEnabled();
+        LambdaQueryWrapper<Permission> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Permission::getEnabled, true)
+                .orderByAsc(Permission::getSort);
+        return this.list(wrapper);
     }
 
     @Override
     public List<Permission> getPermissionTree() {
-        List<Permission> allPermissions = permissionMapper.selectAll();
+        List<Permission> allPermissions = this.findAll();
         return buildTree(allPermissions, 0L);
     }
 
     @Override
     public boolean existsByCode(String code) {
-        return permissionMapper.countByCode(code) > 0;
+        LambdaQueryWrapper<Permission> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Permission::getCode, code);
+        return this.count(wrapper) > 0;
     }
 
     @Override
@@ -78,7 +93,7 @@ public class PermissionServiceImpl implements PermissionService {
             permission.setParentId(0L);
         }
         permission.setIsDeleted(false);
-        permissionMapper.insert(permission);
+        this.save(permission);
         log.info("创建权限成功: code={}, name={}", permission.getCode(), permission.getName());
         return permission;
     }
@@ -86,46 +101,49 @@ public class PermissionServiceImpl implements PermissionService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updatePermission(Permission permission) {
-        int rows = permissionMapper.update(permission);
-        if (rows > 0) {
+        boolean success = this.updateById(permission);
+        if (success) {
             log.info("更新权限成功: id={}", permission.getId());
         }
-        return rows > 0;
+        return success;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateEnabled(Long id, Boolean enabled) {
-        int rows = permissionMapper.updateEnabled(id, enabled);
-        if (rows > 0) {
+        LambdaUpdateWrapper<Permission> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(Permission::getId, id)
+                .set(Permission::getEnabled, enabled);
+        boolean success = this.update(wrapper);
+        if (success) {
             log.info("更新权限状态: id={}, enabled={}", id, enabled);
         }
-        return rows > 0;
+        return success;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean deleteById(Long id) {
-        int rows = permissionMapper.deleteById(id);
-        if (rows > 0) {
+    public boolean deletePermission(Long id) {
+        boolean success = this.removeById(id);
+        if (success) {
             log.info("删除权限成功: id={}", id);
         }
-        return rows > 0;
+        return success;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean deleteByIds(List<Long> ids) {
-        int rows = permissionMapper.deleteByIds(ids);
-        if (rows > 0) {
+    public boolean deletePermissions(List<Long> ids) {
+        boolean success = this.removeByIds(ids);
+        if (success) {
             log.info("批量删除权限成功: ids={}", ids);
         }
-        return rows > 0;
+        return success;
     }
 
     @Override
     public List<Permission> findByRoleId(Long roleId) {
-        return permissionMapper.selectByRoleId(roleId);
+        return this.baseMapper.selectByRoleId(roleId);
     }
 
     @Override
@@ -133,19 +151,19 @@ public class PermissionServiceImpl implements PermissionService {
         if (roleIds == null || roleIds.isEmpty()) {
             return new ArrayList<>();
         }
-        return permissionMapper.selectByRoleIds(roleIds);
+        return this.baseMapper.selectByRoleIds(roleIds);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean assignPermissionsToRole(Long roleId, List<Long> permissionIds) {
         // 先删除旧的关联
-        permissionMapper.deleteRolePermissions(roleId);
+        this.baseMapper.deleteRolePermissions(roleId);
 
         // 插入新的关联
         if (permissionIds != null && !permissionIds.isEmpty()) {
             for (Long permissionId : permissionIds) {
-                permissionMapper.insertRolePermission(roleId, permissionId);
+                this.baseMapper.insertRolePermission(roleId, permissionId);
             }
         }
 
@@ -155,7 +173,7 @@ public class PermissionServiceImpl implements PermissionService {
 
     @Override
     public List<Long> getPermissionIdsByRoleId(Long roleId) {
-        return permissionMapper.selectPermissionIdsByRoleId(roleId);
+        return this.baseMapper.selectPermissionIdsByRoleId(roleId);
     }
 
     /**

@@ -11,7 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @since 1.0.0
  */
 @SpringBootApplication
-@MapperScan("com.antigravity.module.**.mapper")
+@MapperScan("com.antigravity.module.*.mapper")
 public class Application {
 
     public static void main(String[] args) {

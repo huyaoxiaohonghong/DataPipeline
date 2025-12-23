@@ -2,7 +2,11 @@ package com.antigravity.module.user;
 
 import com.antigravity.common.PageResult;
 import com.antigravity.module.user.mapper.UserMapper;
-import lombok.RequiredArgsConstructor;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,49 +24,62 @@ import java.util.Optional;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
-public class UserServiceImpl implements UserService {
-
-    private final UserMapper userMapper;
+public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
     private static final String SALT = "Antigravity@2024";
 
     @Override
     public Optional<User> findById(Long id) {
-        return Optional.ofNullable(userMapper.selectById(id));
+        return Optional.ofNullable(this.getById(id));
     }
 
     @Override
     public Optional<User> findByUsername(String username) {
-        return Optional.ofNullable(userMapper.selectByUsername(username));
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getUsername, username);
+        return Optional.ofNullable(this.getOne(wrapper));
     }
 
     @Override
     public Optional<User> findByEmail(String email) {
-        return Optional.ofNullable(userMapper.selectByEmail(email));
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getEmail, email);
+        return Optional.ofNullable(this.getOne(wrapper));
     }
 
     @Override
     public List<User> findByRole(String role) {
-        return userMapper.selectByRole(role);
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getRole, role)
+                .orderByDesc(User::getCreateTime);
+        return this.list(wrapper);
     }
 
     @Override
     public PageResult<User> pageQuery(int pageNumber, int pageSize, String username, String role) {
-        int offset = (pageNumber - 1) * pageSize;
-        List<User> records = userMapper.selectPage(username, role, offset, pageSize);
-        long total = userMapper.selectCount(username, role);
-        return PageResult.of(records, pageNumber, pageSize, total);
+        Page<User> page = new Page<>(pageNumber, pageSize);
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+
+        wrapper.like(StringUtils.isNotBlank(username), User::getUsername, username)
+                .eq(StringUtils.isNotBlank(role), User::getRole, role)
+                .orderByDesc(User::getCreateTime);
+
+        Page<User> resultPage = this.page(page, wrapper);
+        return PageResult.of(resultPage.getRecords(), pageNumber, pageSize, resultPage.getTotal());
     }
 
     @Override
     public boolean existsByUsername(String username) {
-        return userMapper.countByUsername(username) > 0;
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getUsername, username);
+        return this.count(wrapper) > 0;
     }
 
     @Override
     public boolean existsByEmail(String email) {
-        return userMapper.countByEmail(email) > 0;
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getEmail, email);
+        return this.count(wrapper) > 0;
     }
 
     @Override
@@ -73,7 +90,7 @@ public class UserServiceImpl implements UserService {
             user.setRole("USER");
         }
         user.setIsDeleted(false);
-        userMapper.insert(user);
+        this.save(user);
         user.setPassword(null);
         return user;
     }
@@ -81,14 +98,14 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateUser(User user) {
-        return userMapper.update(user) > 0;
+        return this.updateById(user);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean changePassword(Long userId, String oldPassword, String newPassword) {
-        User user = userMapper.selectById(userId);
-        if (user == null || Boolean.TRUE.equals(user.getIsDeleted())) {
+        User user = this.getById(userId);
+        if (user == null) {
             return false;
         }
 
@@ -97,25 +114,31 @@ public class UserServiceImpl implements UserService {
             return false;
         }
 
-        return userMapper.updatePassword(userId, encryptPassword(newPassword)) > 0;
+        LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(User::getId, userId)
+                .set(User::getPassword, encryptPassword(newPassword));
+        return this.update(wrapper);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateRole(Long userId, String role) {
-        return userMapper.updateRole(userId, role) > 0;
+        LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(User::getId, userId)
+                .set(User::getRole, role);
+        return this.update(wrapper);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean deleteById(Long id) {
-        return userMapper.deleteById(id) > 0;
+    public boolean deleteUser(Long id) {
+        return this.removeById(id);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean deleteByIds(List<Long> ids) {
-        return userMapper.deleteByIds(ids) > 0;
+    public boolean deleteUsers(List<Long> ids) {
+        return this.removeByIds(ids);
     }
 
     private String encryptPassword(String password) {

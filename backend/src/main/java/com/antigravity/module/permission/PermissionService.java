@@ -1,5 +1,7 @@
 package com.antigravity.module.permission;
 
+import com.baomidou.mybatisplus.extension.service.IService;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -9,7 +11,7 @@ import java.util.Optional;
  * @author Antigravity Team
  * @since 1.0.0
  */
-public interface PermissionService {
+public interface PermissionService extends IService<Permission> {
 
     /**
      * 根据ID查询权限
@@ -69,12 +71,12 @@ public interface PermissionService {
     /**
      * 删除权限
      */
-    boolean deleteById(Long id);
+    boolean deletePermission(Long id);
 
     /**
      * 批量删除权限
      */
-    boolean deleteByIds(List<Long> ids);
+    boolean deletePermissions(List<Long> ids);
 
     /**
      * 根据角色ID查询权限

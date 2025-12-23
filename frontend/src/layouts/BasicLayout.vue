@@ -8,6 +8,7 @@ import {
   UserOutlined,
   TeamOutlined,
   SafetyOutlined,
+  DatabaseOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   LogoutOutlined,
@@ -57,6 +58,12 @@ const menuItems = [
     icon: SafetyOutlined,
     label: '权限管理',
     path: '/permissions'
+  },
+  {
+    key: 'DbConnectionList',
+    icon: DatabaseOutlined,
+    label: '数据库管理',
+    path: '/db-connections'
   }
 ]
 

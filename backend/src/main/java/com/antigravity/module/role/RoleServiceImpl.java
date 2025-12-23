@@ -2,7 +2,11 @@ package com.antigravity.module.role;
 
 import com.antigravity.common.PageResult;
 import com.antigravity.module.role.mapper.RoleMapper;
-import lombok.RequiredArgsConstructor;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,47 +22,63 @@ import java.util.Optional;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
-public class RoleServiceImpl implements RoleService {
-
-    private final RoleMapper roleMapper;
+public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements RoleService {
 
     @Override
     public Optional<Role> findById(Long id) {
-        return Optional.ofNullable(roleMapper.selectById(id));
+        return Optional.ofNullable(this.getById(id));
     }
 
     @Override
     public Optional<Role> findByCode(String code) {
-        return Optional.ofNullable(roleMapper.selectByCode(code));
+        LambdaQueryWrapper<Role> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Role::getCode, code);
+        return Optional.ofNullable(this.getOne(wrapper));
     }
 
     @Override
     public List<Role> findAll() {
-        return roleMapper.selectAll();
+        LambdaQueryWrapper<Role> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByAsc(Role::getSort)
+                .orderByDesc(Role::getCreateTime);
+        return this.list(wrapper);
     }
 
     @Override
     public List<Role> findEnabled() {
-        return roleMapper.selectEnabled();
+        LambdaQueryWrapper<Role> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Role::getEnabled, true)
+                .orderByAsc(Role::getSort);
+        return this.list(wrapper);
     }
 
     @Override
     public PageResult<Role> pageQuery(int pageNumber, int pageSize, String name, String code, Boolean enabled) {
-        int offset = (pageNumber - 1) * pageSize;
-        List<Role> records = roleMapper.selectPage(name, code, enabled, offset, pageSize);
-        long total = roleMapper.selectCount(name, code, enabled);
-        return PageResult.of(records, pageNumber, pageSize, total);
+        Page<Role> page = new Page<>(pageNumber, pageSize);
+        LambdaQueryWrapper<Role> wrapper = new LambdaQueryWrapper<>();
+
+        wrapper.like(StringUtils.isNotBlank(name), Role::getName, name)
+                .like(StringUtils.isNotBlank(code), Role::getCode, code)
+                .eq(enabled != null, Role::getEnabled, enabled)
+                .orderByAsc(Role::getSort)
+                .orderByDesc(Role::getCreateTime);
+
+        Page<Role> resultPage = this.page(page, wrapper);
+        return PageResult.of(resultPage.getRecords(), pageNumber, pageSize, resultPage.getTotal());
     }
 
     @Override
     public boolean existsByCode(String code) {
-        return roleMapper.countByCode(code) > 0;
+        LambdaQueryWrapper<Role> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Role::getCode, code);
+        return this.count(wrapper) > 0;
     }
 
     @Override
     public boolean existsByName(String name) {
-        return roleMapper.countByName(name) > 0;
+        LambdaQueryWrapper<Role> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Role::getName, name);
+        return this.count(wrapper) > 0;
     }
 
     @Override
@@ -71,7 +91,7 @@ public class RoleServiceImpl implements RoleService {
             role.setEnabled(true);
         }
         role.setIsDeleted(false);
-        roleMapper.insert(role);
+        this.save(role);
         log.info("创建角色成功: code={}, name={}", role.getCode(), role.getName());
         return role;
     }
@@ -79,41 +99,44 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateRole(Role role) {
-        int rows = roleMapper.update(role);
-        if (rows > 0) {
+        boolean success = this.updateById(role);
+        if (success) {
             log.info("更新角色成功: id={}", role.getId());
         }
-        return rows > 0;
+        return success;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateEnabled(Long id, Boolean enabled) {
-        int rows = roleMapper.updateEnabled(id, enabled);
-        if (rows > 0) {
+        LambdaUpdateWrapper<Role> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(Role::getId, id)
+                .set(Role::getEnabled, enabled);
+        boolean success = this.update(wrapper);
+        if (success) {
             log.info("更新角色状态: id={}, enabled={}", id, enabled);
         }
-        return rows > 0;
+        return success;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean deleteById(Long id) {
-        int rows = roleMapper.deleteById(id);
-        if (rows > 0) {
+    public boolean deleteRole(Long id) {
+        boolean success = this.removeById(id);
+        if (success) {
             log.info("删除角色成功: id={}", id);
         }
-        return rows > 0;
+        return success;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean deleteByIds(List<Long> ids) {
-        int rows = roleMapper.deleteByIds(ids);
-        if (rows > 0) {
+    public boolean deleteRoles(List<Long> ids) {
+        boolean success = this.removeByIds(ids);
+        if (success) {
             log.info("批量删除角色成功: ids={}", ids);
         }
-        return rows > 0;
+        return success;
     }
 
 }

@@ -1,6 +1,8 @@
 package com.antigravity.module.user;
 
 import com.antigravity.common.BaseEntity;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -14,6 +16,7 @@ import java.io.Serial;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@TableName("sys_user")
 public class User extends BaseEntity {
 
     @Serial
@@ -27,6 +30,7 @@ public class User extends BaseEntity {
 
     private String role;
 
+    @TableLogic
     private Boolean isDeleted;
 
 }

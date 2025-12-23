@@ -1,6 +1,7 @@
 package com.antigravity.module.user;
 
 import com.antigravity.common.PageResult;
+import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,7 +12,7 @@ import java.util.Optional;
  * @author Antigravity Team
  * @since 1.0.0
  */
-public interface UserService {
+public interface UserService extends IService<User> {
 
     Optional<User> findById(Long id);
 
@@ -35,8 +36,8 @@ public interface UserService {
 
     boolean updateRole(Long userId, String role);
 
-    boolean deleteById(Long id);
+    boolean deleteUser(Long id);
 
-    boolean deleteByIds(List<Long> ids);
+    boolean deleteUsers(List<Long> ids);
 
 }

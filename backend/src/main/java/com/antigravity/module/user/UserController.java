@@ -154,13 +154,13 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable @Min(value = 1, message = "ID 必须大于 0") Long id) {
-        boolean success = userService.deleteById(id);
+        boolean success = userService.deleteUser(id);
         return success ? Result.success("用户删除成功", null) : Result.error("用户删除失败");
     }
 
     @DeleteMapping("/batch")
     public Result<Void> batchDelete(@RequestBody @NotEmpty(message = "请选择要删除的用户") List<Long> ids) {
-        boolean success = userService.deleteByIds(ids);
+        boolean success = userService.deleteUsers(ids);
         return success ? Result.success("批量删除成功", null) : Result.error("批量删除失败");
     }
 

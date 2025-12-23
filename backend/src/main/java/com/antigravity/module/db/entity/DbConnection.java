@@ -1,4 +1,4 @@
-package com.antigravity.module.permission;
+package com.antigravity.module.db.entity;
 
 import com.antigravity.common.BaseEntity;
 import com.baomidou.mybatisplus.annotation.TableLogic;
@@ -9,53 +9,58 @@ import lombok.EqualsAndHashCode;
 import java.io.Serial;
 
 /**
- * 权限实体
+ * 数据库连接实体
  *
  * @author Antigravity Team
  * @since 1.0.0
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("sys_permission")
-public class Permission extends BaseEntity {
+@TableName("sys_db_connection")
+public class DbConnection extends BaseEntity {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
     /**
-     * 权限编码（唯一）
-     */
-    private String code;
-
-    /**
-     * 权限名称
+     * 连接名称
      */
     private String name;
 
     /**
-     * 权限类型：MENU-菜单, BUTTON-按钮, API-接口
+     * 数据库类型：MYSQL, POSTGRESQL, ORACLE, SQLSERVER
      */
-    private String type;
+    private String dbType;
 
     /**
-     * 父级ID
+     * 主机地址
      */
-    private Long parentId;
+    private String host;
 
     /**
-     * 路径/URL
+     * 端口
      */
-    private String path;
+    private Integer port;
 
     /**
-     * 图标
+     * 数据库名
      */
-    private String icon;
+    private String databaseName;
 
     /**
-     * 排序号
+     * 用户名
      */
-    private Integer sort;
+    private String username;
+
+    /**
+     * 密码（加密存储）
+     */
+    private String password;
+
+    /**
+     * 描述
+     */
+    private String description;
 
     /**
      * 是否启用

@@ -191,7 +191,7 @@ public class RoleController {
             return Result.badRequest("系统内置角色不允许删除");
         }
 
-        boolean success = roleService.deleteById(id);
+        boolean success = roleService.deleteRole(id);
         return success ? Result.success("角色删除成功", null) : Result.error("角色删除失败");
     }
 
@@ -201,7 +201,7 @@ public class RoleController {
     @DeleteMapping("/batch")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> batchDelete(@RequestBody @NotEmpty(message = "请选择要删除的角色") List<Long> ids) {
-        boolean success = roleService.deleteByIds(ids);
+        boolean success = roleService.deleteRoles(ids);
         return success ? Result.success("批量删除成功", null) : Result.error("批量删除失败");
     }
 
