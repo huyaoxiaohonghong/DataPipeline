@@ -61,7 +61,7 @@ export const roleApi = {
      * 更新角色状态
      */
     updateEnabled(id: number, enabled: boolean) {
-        return patch<void>(`${BASE_URL}/${id}/enabled`, null, { enabled })
+        return patch<void>(`${BASE_URL}/${id}/enabled`, undefined, { params: { enabled } })
     },
 
     /**
@@ -75,7 +75,7 @@ export const roleApi = {
      * 批量删除角色
      */
     batchDelete(ids: number[]) {
-        return del<void>(`${BASE_URL}/batch`, ids)
+        return del<void>(`${BASE_URL}/batch`, { data: ids })
     },
 
     /**

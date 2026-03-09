@@ -15,7 +15,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * JWT 认证过滤器
@@ -46,11 +47,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Long userId = jwtUtil.getUserIdFromToken(token);
 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    // 创建权限列表
+                    List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                    authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+
+                    // ADMIN 角色拥有所有权限
+                    if ("ADMIN".equalsIgnoreCase(role)) {
+                        authorities.add(new SimpleGrantedAuthority("log:login:list"));
+                        authorities.add(new SimpleGrantedAuthority("log:login:remove"));
+                        authorities.add(new SimpleGrantedAuthority("log:login:clean"));
+                        authorities.add(new SimpleGrantedAuthority("log:operation:list"));
+                        authorities.add(new SimpleGrantedAuthority("log:operation:remove"));
+                        authorities.add(new SimpleGrantedAuthority("log:operation:clean"));
+                    }
+
                     // 创建认证信息
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             username,
                             null,
-                            Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role)));
+                            authorities);
 
                     // 设置用户ID到认证详情中
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, h } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import {
   PlusOutlined,
@@ -10,7 +10,7 @@ import {
   ExclamationCircleOutlined
 } from '@ant-design/icons-vue'
 import { userApi } from '@/api'
-import type { UserInfo, PageResult } from '@/types'
+import type { User, PageResult } from '@/types'
 import UserFormModal from './components/UserFormModal.vue'
 
 // 表格列定义
@@ -47,14 +47,14 @@ const pagination = reactive({
 })
 
 // 表格数据
-const tableData = ref<UserInfo[]>([])
+const tableData = ref<User[]>([])
 const loading = ref(false)
 const selectedRowKeys = ref<number[]>([])
 
 // 弹窗
 const modalVisible = ref(false)
 const modalTitle = ref('新增用户')
-const editingUser = ref<UserInfo | null>(null)
+const editingUser = ref<User | null>(null)
 
 // 加载数据
 const loadData = async () => {
@@ -67,7 +67,7 @@ const loadData = async () => {
       role: searchForm.role
     })
     
-    const result = data as PageResult<UserInfo>
+    const result = data as PageResult<User>
     tableData.value = result.records
     pagination.total = result.totalRow
   } catch (error) {
@@ -106,14 +106,14 @@ const handleAdd = () => {
 }
 
 // 编辑用户
-const handleEdit = (record: UserInfo) => {
+const handleEdit = (record: any) => {
   modalTitle.value = '编辑用户'
   editingUser.value = { ...record }
   modalVisible.value = true
 }
 
 // 删除用户
-const handleDelete = (record: UserInfo) => {
+const handleDelete = (record: any) => {
   Modal.confirm({
     title: '确认删除',
     icon: h(ExclamationCircleOutlined),
@@ -168,8 +168,8 @@ const handleModalSuccess = () => {
 
 // 行选择配置
 const rowSelection = {
-  selectedRowKeys: selectedRowKeys,
-  onChange: (keys: number[]) => {
+  selectedRowKeys: selectedRowKeys.value,
+  onChange: (keys: any[]) => {
     selectedRowKeys.value = keys
   }
 }
@@ -259,7 +259,7 @@ onMounted(() => {
         :loading="loading"
         :pagination="pagination"
         :row-selection="rowSelection"
-        :row-key="(record: UserInfo) => record.id"
+        :row-key="(record: any) => record.id"
         :scroll="{ x: 1000 }"
         @change="handleTableChange"
       >
@@ -291,7 +291,7 @@ onMounted(() => {
     <!-- 用户表单弹窗 -->
     <UserFormModal
       v-model:visible="modalVisible"
-      :title="modalTitle"
+      :mode="editingUser ? 'edit' : 'create'"
       :user="editingUser"
       @success="handleModalSuccess"
     />

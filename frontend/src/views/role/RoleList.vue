@@ -10,8 +10,9 @@ import {
   ExclamationCircleOutlined,
   SafetyCertificateOutlined
 } from '@ant-design/icons-vue'
+import { createVNode } from 'vue'
 import { roleApi } from '@/api/role'
-import type { Role, RoleQueryParams } from '@/types/role'
+import type { Role } from '@/types/role'
 import RoleFormModal from './components/RoleFormModal.vue'
 import PermissionAssignModal from './components/PermissionAssignModal.vue'
 
@@ -30,10 +31,10 @@ const pagination = reactive({
 })
 
 // 搜索条件
-const searchForm = reactive<RoleQueryParams>({
+const searchForm = reactive({
   name: '',
   code: '',
-  enabled: undefined
+  enabled: undefined as any
 })
 
 // 弹窗状态
@@ -158,7 +159,7 @@ const handleAdd = () => {
 /**
  * 编辑角色
  */
-const handleEdit = (record: Role) => {
+const handleEdit = (record: any) => {
   modalMode.value = 'edit'
   currentRole.value = record
   modalVisible.value = true
@@ -167,7 +168,7 @@ const handleEdit = (record: Role) => {
 /**
  * 分配权限
  */
-const handleAssignPermission = (record: Role) => {
+const handleAssignPermission = (record: any) => {
   processingRole.value = record
   permModalVisible.value = true
 }
@@ -175,7 +176,7 @@ const handleAssignPermission = (record: Role) => {
 /**
  * 切换角色状态
  */
-const handleToggleEnabled = async (record: Role) => {
+const handleToggleEnabled = async (record: any) => {
   try {
     await roleApi.updateEnabled(record.id, !record.enabled)
     message.success(record.enabled ? '已禁用' : '已启用')
@@ -188,10 +189,10 @@ const handleToggleEnabled = async (record: Role) => {
 /**
  * 删除角色
  */
-const handleDelete = (record: Role) => {
+const handleDelete = (record: any) => {
   Modal.confirm({
     title: '确认删除',
-    icon: ExclamationCircleOutlined,
+    icon: createVNode(ExclamationCircleOutlined),
     content: `确定要删除角色"${record.name}"吗？`,
     okText: '确定',
     okType: 'danger',
@@ -219,7 +220,7 @@ const handleBatchDelete = () => {
 
   Modal.confirm({
     title: '确认删除',
-    icon: ExclamationCircleOutlined,
+    icon: createVNode(ExclamationCircleOutlined),
     content: `确定要删除选中的 ${selectedRowKeys.value.length} 个角色吗？`,
     okText: '确定',
     okType: 'danger',
@@ -254,7 +255,7 @@ const isBuiltInRole = (code: string) => {
 /**
  * 选择变化
  */
-const onSelectChange = (keys: number[]) => {
+const onSelectChange = (keys: any[]) => {
   selectedRowKeys.value = keys
 }
 
@@ -428,12 +429,12 @@ onMounted(() => {
     .page-title {
       font-size: 24px;
       font-weight: 600;
-      color: rgba(0, 0, 0, 0.85);
+      color: var(--heading-color);
       margin: 0 0 8px 0;
     }
     
     .page-desc {
-      color: rgba(0, 0, 0, 0.45);
+      color: var(--text-color-secondary);
       margin: 0;
     }
   }

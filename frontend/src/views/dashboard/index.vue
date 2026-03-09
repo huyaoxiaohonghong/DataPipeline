@@ -162,12 +162,12 @@ onMounted(() => {
     .page-title {
       font-size: 24px;
       font-weight: 600;
-      color: rgba(0, 0, 0, 0.85);
+      color: var(--heading-color);
       margin: 0 0 8px 0;
     }
     
     .page-desc {
-      color: rgba(0, 0, 0, 0.45);
+      color: var(--text-color-secondary);
       margin: 0;
     }
   }
@@ -188,14 +188,14 @@ onMounted(() => {
       .stat-info {
         .stat-title {
           font-size: 14px;
-          color: rgba(0, 0, 0, 0.45);
+          color: var(--text-color-secondary);
           margin-bottom: 8px;
         }
         
         .stat-value {
           font-size: 28px;
           font-weight: 600;
-          color: rgba(0, 0, 0, 0.85);
+          color: var(--heading-color);
           line-height: 1.2;
         }
         
@@ -207,15 +207,15 @@ onMounted(() => {
           font-size: 12px;
           
           &.up {
-            color: #52c41a;
+            color: var(--success-color);
           }
           
           &.down {
-            color: #ff4d4f;
+            color: var(--error-color);
           }
           
           .trend-text {
-            color: rgba(0, 0, 0, 0.45);
+            color: var(--text-color-secondary);
             margin-left: 4px;
           }
         }
@@ -224,7 +224,7 @@ onMounted(() => {
       .stat-icon {
         width: 48px;
         height: 48px;
-        border-radius: 8px;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -242,12 +242,13 @@ onMounted(() => {
       flex-direction: column;
       align-items: center;
       padding: 16px;
-      border-radius: 8px;
-      transition: all 0.3s;
+      border-radius: 12px;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       cursor: pointer;
       
       &:hover {
-        background: rgba(0, 0, 0, 0.02);
+        background: var(--layout-item-hover);
+        transform: translateY(-3px);
       }
       
       .shortcut-icon {
@@ -260,11 +261,12 @@ onMounted(() => {
         font-size: 20px;
         color: #fff;
         margin-bottom: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       }
       
       .shortcut-title {
         font-size: 14px;
-        color: rgba(0, 0, 0, 0.65);
+        color: var(--text-color);
       }
     }
   }
@@ -294,19 +296,19 @@ onMounted(() => {
       
       .activity-info {
         .activity-user {
-          font-weight: 500;
-          color: rgba(0, 0, 0, 0.85);
+          font-weight: 600;
+          color: var(--heading-color);
         }
         
         .activity-action {
-          color: rgba(0, 0, 0, 0.65);
+          color: var(--text-color);
           margin-left: 4px;
         }
       }
       
       .activity-time {
         font-size: 12px;
-        color: rgba(0, 0, 0, 0.45);
+        color: var(--text-color-secondary);
         margin-top: 4px;
       }
     }

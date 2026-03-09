@@ -1,6 +1,6 @@
 package com.antigravity.module.role.mapper;
 
-import com.antigravity.module.role.Role;
+import com.antigravity.module.role.entity.Role;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -18,3 +18,4 @@ public interface RoleMapper extends BaseMapper<Role> {
         // Custom complex queries can be added here if needed.
 
 }
+

@@ -1,6 +1,6 @@
 package com.antigravity.module.permission.dto;
 
-import com.antigravity.module.permission.Permission;
+import com.antigravity.module.permission.entity.Permission;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -64,3 +64,4 @@ public class PermissionVO {
     }
 
 }
+

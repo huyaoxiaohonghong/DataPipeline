@@ -61,7 +61,7 @@ export const permissionApi = {
      * 更新权限状态
      */
     updateEnabled(id: number, enabled: boolean) {
-        return patch<void>(`${BASE_URL}/${id}/enabled`, null, { params: { enabled } })
+        return patch<void>(`${BASE_URL}/${id}/enabled`, undefined, { params: { enabled } })
     },
 
     /**

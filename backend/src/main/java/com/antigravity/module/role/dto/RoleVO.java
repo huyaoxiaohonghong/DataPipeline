@@ -1,6 +1,6 @@
 package com.antigravity.module.role.dto;
 
-import com.antigravity.module.role.Role;
+import com.antigravity.module.role.entity.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -49,3 +49,4 @@ public class RoleVO {
     }
 
 }
+

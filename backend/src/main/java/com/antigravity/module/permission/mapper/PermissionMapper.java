@@ -1,6 +1,6 @@
 package com.antigravity.module.permission.mapper;
 
-import com.antigravity.module.permission.Permission;
+import com.antigravity.module.permission.entity.Permission;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.*;
 
@@ -47,3 +47,4 @@ public interface PermissionMapper extends BaseMapper<Permission> {
         List<Long> selectPermissionIdsByRoleId(Long roleId);
 
 }
+

@@ -15,9 +15,9 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://149.88.74.178:3306/data_pipeline?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://47.109.128.110:3306/data_pipeline?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
-    password: "123456"
+    password: 123456
     hikari:
       minimum-idle: 5
       maximum-pool-size: 20
@@ -28,9 +28,9 @@ spring:
 
   data:
     redis:
-      host: 149.88.74.178
+      host: 47.109.128.110
       port: 6379
-      password: "123456"
+      password: 123456
       database: 0
       timeout: 10000ms
       lettuce:
@@ -63,3 +63,9 @@ logging:
   level:
     root: INFO
     com.antigravity: DEBUG
+
+# SeaTunnel配置
+seatunnel:
+  api:
+    base-url: http://38.14.254.41:8080
+    timeout: 30000

@@ -181,10 +181,23 @@ const handleCaptchaSuccess = async (token: string) => {
 .login-box {
   width: 400px;
   padding: 40px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   z-index: 1;
+}
+
+[data-theme='dark'] .login-box {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .login-header {
@@ -193,20 +206,21 @@ const handleCaptchaSuccess = async (token: string) => {
 
   .login-title {
     font-size: 32px;
-    font-weight: 600;
-    color: #1890ff;
+    font-weight: 800;
+    color: var(--primary-color);
     margin-bottom: 8px;
+    letter-spacing: -0.03em;
   }
 
   .login-subtitle {
     font-size: 14px;
-    color: rgba(0, 0, 0, 0.45);
+    color: var(--text-color-secondary);
   }
 }
 
 .login-form {
   .input-icon {
-    color: rgba(0, 0, 0, 0.25);
+    color: var(--text-color-secondary);
   }
 
   .login-options {
@@ -215,7 +229,7 @@ const handleCaptchaSuccess = async (token: string) => {
     align-items: center;
 
     .forgot-link {
-      color: #1890ff;
+      color: var(--primary-color);
       cursor: pointer;
 
       &:hover {
@@ -228,7 +242,7 @@ const handleCaptchaSuccess = async (token: string) => {
 .login-footer {
   text-align: center;
   margin-top: 24px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--text-color-secondary);
   font-size: 12px;
 }
 

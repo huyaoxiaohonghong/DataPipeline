@@ -47,6 +47,6 @@ export const useAppStore = defineStore('app', () => {
     persist: {
         key: 'data-pipeline-app',
         storage: localStorage,
-        pick: ['collapsed', 'darkMode']
+        paths: ['collapsed', 'darkMode']
     }
 })

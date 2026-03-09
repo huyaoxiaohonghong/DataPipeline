@@ -1,6 +1,6 @@
 package com.antigravity.module.user.dto;
 
-import com.antigravity.module.user.User;
+import com.antigravity.module.user.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

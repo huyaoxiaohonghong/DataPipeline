@@ -1,7 +1,7 @@
 package com.antigravity.common.security;
 
-import com.antigravity.module.user.User;
-import com.antigravity.module.user.UserService;
+import com.antigravity.module.user.entity.User;
+import com.antigravity.module.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

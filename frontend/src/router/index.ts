@@ -37,10 +37,16 @@ const routes: RouteRecordRaw[] = [
                 meta: { title: '权限管理', icon: 'SafetyOutlined' }
             },
             {
-                path: 'db-connections',
-                name: 'DbConnectionList',
-                component: () => import('@/views/db/DbConnectionList.vue'),
-                meta: { title: '数据库管理', icon: 'DatabaseOutlined' }
+                path: 'logs/login',
+                name: 'LoginLogList',
+                component: () => import('@/views/log/LoginLogList.vue'),
+                meta: { title: '登录日志', icon: 'LoginOutlined' }
+            },
+            {
+                path: 'logs/operation',
+                name: 'OperationLogList',
+                component: () => import('@/views/log/OperationLogList.vue'),
+                meta: { title: '操作日志', icon: 'FileProtectOutlined' }
             }
         ]
     },

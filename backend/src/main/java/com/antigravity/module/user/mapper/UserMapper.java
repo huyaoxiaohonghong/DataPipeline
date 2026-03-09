@@ -1,6 +1,6 @@
 package com.antigravity.module.user.mapper;
 
-import com.antigravity.module.user.User;
+import com.antigravity.module.user.entity.User;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 

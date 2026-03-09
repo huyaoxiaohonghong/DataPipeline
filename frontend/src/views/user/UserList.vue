@@ -6,8 +6,7 @@ import {
   SearchOutlined,
   ReloadOutlined,
   EditOutlined,
-  DeleteOutlined,
-  ExclamationCircleOutlined
+  DeleteOutlined
 } from '@ant-design/icons-vue'
 import { userApi } from '@/api/user'
 import type { User, UserQueryParams } from '@/types/user'
@@ -98,7 +97,7 @@ const pagination = computed(() => ({
 // 行选择配置
 const rowSelection = computed(() => ({
   selectedRowKeys: selectedRowKeys.value,
-  onChange: (keys: number[], rows: User[]) => {
+  onChange: (keys: any[], rows: User[]) => {
     selectedRowKeys.value = keys
     selectedRows.value = rows
   }
@@ -171,7 +170,7 @@ const handleCreate = () => {
 /**
  * 编辑用户
  */
-const handleEdit = (record: User) => {
+const handleEdit = (record: any) => {
   modalMode.value = 'edit'
   editingUser.value = { ...record }
   modalVisible.value = true
@@ -180,7 +179,7 @@ const handleEdit = (record: User) => {
 /**
  * 删除用户
  */
-const handleDelete = async (record: User) => {
+const handleDelete = async (record: any) => {
   try {
     await userApi.delete(record.id)
     message.success('删除成功')

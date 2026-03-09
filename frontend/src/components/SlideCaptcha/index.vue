@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted } from 'vue'
 import { authApi, type CaptchaResponse } from '@/api/auth'
 import { message } from 'ant-design-vue'
 import { ReloadOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons-vue'
@@ -75,7 +75,7 @@ const handleDragEnd = async () => {
       }, 500)
     } else {
       status.value = 'error'
-      message.error(res.msg || '验证失败，请重试')
+      message.error(res.message || '验证失败，请重试')
       setTimeout(() => {
         refreshCaptcha()
       }, 1000)

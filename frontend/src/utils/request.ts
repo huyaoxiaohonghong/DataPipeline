@@ -78,11 +78,11 @@ instance.interceptors.request.use(
  */
 instance.interceptors.response.use(
     (response: AxiosResponse<ApiResponse>) => {
-        const { code, message: msg, data } = response.data
+        const { code, message: msg } = response.data
 
         // 业务状态码 200 表示成功
         if (code === 200) {
-            return response.data
+            return response.data as any
         }
 
         // 业务错误，显示错误消息
@@ -149,7 +149,7 @@ export const get = <T = any>(
  */
 export const post = <T = any>(
     url: string,
-    data?: Record<string, any>,
+    data?: any,
     config?: AxiosRequestConfig
 ): Promise<ApiResponse<T>> => {
     return instance.post(url, data, config)
@@ -160,7 +160,7 @@ export const post = <T = any>(
  */
 export const put = <T = any>(
     url: string,
-    data?: Record<string, any>,
+    data?: any,
     config?: AxiosRequestConfig
 ): Promise<ApiResponse<T>> => {
     return instance.put(url, data, config)
@@ -181,7 +181,7 @@ export const del = <T = any>(
  */
 export const patch = <T = any>(
     url: string,
-    data?: Record<string, any>,
+    data?: any,
     config?: AxiosRequestConfig
 ): Promise<ApiResponse<T>> => {
     return instance.patch(url, data, config)

@@ -8,6 +8,7 @@ import {
   EditOutlined,
   ExclamationCircleOutlined
 } from '@ant-design/icons-vue'
+import { createVNode } from 'vue'
 import { permissionApi } from '@/api/permission'
 import type { Permission } from '@/types/permission'
 import { PermissionType, PermissionTypeMap, PermissionTypeColorMap } from '@/types/permission'
@@ -118,7 +119,7 @@ const handleAdd = () => {
 /**
  * 新增子权限
  */
-const handleAddChild = (record: Permission) => {
+const handleAddChild = (record: any) => {
   modalMode.value = 'create'
   currentPermission.value = null
   parentIdForCreate.value = record.id
@@ -128,7 +129,7 @@ const handleAddChild = (record: Permission) => {
 /**
  * 编辑权限
  */
-const handleEdit = (record: Permission) => {
+const handleEdit = (record: any) => {
   modalMode.value = 'edit'
   currentPermission.value = record
   parentIdForCreate.value = undefined
@@ -138,7 +139,7 @@ const handleEdit = (record: Permission) => {
 /**
  * 切换权限状态
  */
-const handleToggleEnabled = async (record: Permission) => {
+const handleToggleEnabled = async (record: any) => {
   try {
     await permissionApi.updateEnabled(record.id, !record.enabled)
     message.success(record.enabled ? '已禁用' : '已启用')
@@ -151,10 +152,10 @@ const handleToggleEnabled = async (record: Permission) => {
 /**
  * 删除权限
  */
-const handleDelete = (record: Permission) => {
+const handleDelete = (record: any) => {
   Modal.confirm({
     title: '确认删除',
-    icon: ExclamationCircleOutlined,
+    icon: createVNode(ExclamationCircleOutlined),
     content: `确定要删除权限"${record.name}"吗？这将同时删除所有子权限！`,
     okText: '确定',
     okType: 'danger',
@@ -181,7 +182,7 @@ const handleModalSuccess = () => {
 /**
  * 展开/折叠行
  */
-const onExpand = (expanded: boolean, record: Permission) => {
+const onExpand = (expanded: boolean, record: any) => {
   if (expanded) {
     expandedRowKeys.value.push(record.id)
   } else {
@@ -313,12 +314,12 @@ onMounted(() => {
     .page-title {
       font-size: 24px;
       font-weight: 600;
-      color: rgba(0, 0, 0, 0.85);
+      color: var(--heading-color);
       margin: 0 0 8px 0;
     }
     
     .page-desc {
-      color: rgba(0, 0, 0, 0.45);
+      color: var(--text-color-secondary);
       margin: 0;
     }
   }
