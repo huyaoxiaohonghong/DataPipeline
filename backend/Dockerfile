@@ -2,9 +2,13 @@
 # DataPipeline Backend Dockerfile (Spring Boot 4.0 + JDK 25)
 # =============================================================================
 
-# Stage 1: Build the application using Maven and JDK 25
-FROM maven:3.9-eclipse-temurin-25-alpine AS build
+# Stage 1: Build the application using Eclipse Temurin JDK 25 and Maven
+FROM eclipse-temurin:25-jdk-alpine AS build
+RUN apk add --no-cache maven
 WORKDIR /app
+
+# Set Maven memory limits to prevent host OOM kills during compilation on 4GB RAM hosts
+ENV MAVEN_OPTS="-Xmx512m -XX:+UseSerialGC"
 
 # Copy pom.xml and download dependencies (for caching layer)
 COPY pom.xml .
