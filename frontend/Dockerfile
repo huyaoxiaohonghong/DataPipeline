@@ -12,7 +12,7 @@ RUN npm install --legacy-peer-deps
 
 # Copy source and build static distribution
 COPY . .
-RUN npm run build
+RUN npx vite build
 
 # Stage 2: Serve the application using Nginx
 FROM nginx:stable-alpine
