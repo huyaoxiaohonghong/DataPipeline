@@ -21,14 +21,41 @@ if ! command -v docker &> /dev/null; then
     echo -e "${YELLOW}[WARN] 系统中未检测到 Docker！${NC}"
     read -p "是否要自动安装 Docker？(y/n): " install_docker
     if [[ "$install_docker" =~ ^[Yy]$ ]]; then
-        echo -e "正在尝试通过官方一键脚本安装 Docker (可能需要 sudo 权限)..."
-        if curl -fsSL https://get.docker.com | bash; then
-            echo -e "${GREEN}[OK] Docker 安装成功！${NC}"
-            echo -e "正在尝试启动并启用 Docker 服务..."
-            sudo systemctl enable --now docker
+        echo -e "正在尝试从官方源下载安装脚本..."
+        # 避免管道屏蔽退出状态码，先下载文件再执行
+        if curl -fsSL --connect-timeout 8 https://get.docker.com -o get-docker.sh; then
+            echo -e "正在执行官方一键安装脚本 (可能需要 sudo 权限)..."
+            if sudo sh get-docker.sh; then
+                echo -e "${GREEN}[OK] Docker 官方脚本安装成功！${NC}"
+                rm -f get-docker.sh
+                echo -e "正在尝试启动并启用 Docker 服务..."
+                sudo systemctl enable --now docker
+            else
+                rm -f get-docker.sh
+                echo -e "${RED}[ERROR] 官方 Docker 安装脚本执行失败，请手动检查系统兼容性。${NC}"
+                exit 1
+            fi
         else
-            echo -e "${RED}[ERROR] Docker 自动安装失败，请手动安装后重试。${NC}"
-            exit 1
+            rm -f get-docker.sh
+            echo -e "${YELLOW}[WARN] 官方一键脚本下载失败（可能由于国内网络环境导致 Connection Reset）${NC}"
+            echo -e "正在尝试通过国内极速镜像源进行自动安装..."
+            if curl -fsSL --connect-timeout 8 https://linuxmirrors.cn/docker.sh -o get-docker-cn.sh; then
+                echo -e "正在执行国内镜像源安装脚本，请根据界面提示交互式选择（推荐选择阿里云/腾讯云源，并配置加速器）..."
+                if sudo bash get-docker-cn.sh; then
+                    echo -e "${GREEN}[OK] Docker 通过国内镜像源安装成功！${NC}"
+                    rm -f get-docker-cn.sh
+                    echo -e "正在尝试启动并启用 Docker 服务..."
+                    sudo systemctl enable --now docker
+                else
+                    rm -f get-docker-cn.sh
+                    echo -e "${RED}[ERROR] 国内镜像源 Docker 安装脚本执行失败，请手动安装后重试。${NC}"
+                    exit 1
+                fi
+            else
+                rm -f get-docker-cn.sh
+                echo -e "${RED}[ERROR] Docker 自动安装失败（官方与国内镜像均无法连接），请检查网络连接并手动安装。${NC}"
+                exit 1
+            fi
         fi
     else
         echo -e "${RED}[ERROR] 已取消自动安装。请先安装 Docker 后重新运行此脚本。${NC}"
@@ -60,14 +87,24 @@ else
     echo -e "${YELLOW}[WARN] 系统中未检测到 docker compose 插件或 docker-compose 命令！${NC}"
     read -p "是否要自动下载并安装独立版 docker-compose？(y/n): " install_compose
     if [[ "$install_compose" =~ ^[Yy]$ ]]; then
-        echo -e "正在从 GitHub 下载最新独立版 docker-compose..."
-        if sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose; then
+        COMPOSE_URL="https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)"
+        COMPOSE_CN_URL="https://mirror.ghproxy.com/${COMPOSE_URL}"
+        
+        echo -e "正在从 GitHub 官方下载最新独立版 docker-compose..."
+        if sudo curl -L --connect-timeout 8 "$COMPOSE_URL" -o /usr/local/bin/docker-compose; then
             sudo chmod +x /usr/local/bin/docker-compose
             COMPOSE_CMD="docker-compose"
             echo -e "${GREEN}[OK] docker-compose 下载并安装成功！${NC}"
         else
-            echo -e "${RED}[ERROR] docker-compose 自动下载失败！请手动安装后重试。${NC}"
-            exit 1
+            echo -e "${YELLOW}[WARN] 官方 Github 地址下载失败，正在尝试通过国内加速代理下载...${NC}"
+            if sudo curl -L --connect-timeout 10 "$COMPOSE_CN_URL" -o /usr/local/bin/docker-compose; then
+                sudo chmod +x /usr/local/bin/docker-compose
+                COMPOSE_CMD="docker-compose"
+                echo -e "${GREEN}[OK] docker-compose 通过加速代理下载并安装成功！${NC}"
+            else
+                echo -e "${RED}[ERROR] docker-compose 自动下载失败（包含加速代理尝试）！请手动安装后重试。${NC}"
+                exit 1
+            fi
         fi
     else
         echo -e "${RED}[ERROR] 已取消自动安装。请先手动安装 docker-compose 后重新运行此脚本。${NC}"
