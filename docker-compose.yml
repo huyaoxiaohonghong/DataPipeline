@@ -43,6 +43,19 @@ services:
       retries: 5
 
   # ===========================================================================
+  # Apache SeaTunnel (Zeta Engine Standalone Mode)
+  # ===========================================================================
+  seatunnel:
+    image: apache/seatunnel:2.3.3
+    container_name: datapipeline-seatunnel
+    restart: always
+    ports:
+      - "5801:5801"
+    command: ["/opt/seatunnel/bin/seatunnel-cluster.sh", "-r", "master_and_worker"]
+    volumes:
+      - ./seatunnel/connectors:/opt/seatunnel/connectors
+
+  # ===========================================================================
   # Backend Spring Boot Service (JDK 25 + Virtual Threads)
   # ===========================================================================
   backend:
@@ -62,12 +75,14 @@ services:
       SPRING_DATA_REDIS_HOST: "redis"
       SPRING_DATA_REDIS_PORT: "6379"
       SPRING_DATA_REDIS_PASSWORD: "123456"
-      SEATUNNEL_API_BASE_URL: "http://seatunnel:8080" # Placeholder for local SeaTunnel cluster
+      SEATUNNEL_API_BASE_URL: "http://seatunnel:5801" # Connected to local SeaTunnel cluster
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
+      seatunnel:
+        condition: service_started
 
   # ===========================================================================
   # Nginx Gateway & Frontend Service (Vue 3 + Vite 6 + Nginx proxy)
