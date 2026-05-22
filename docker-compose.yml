@@ -46,7 +46,7 @@ services:
   # Apache SeaTunnel (Zeta Engine Standalone Mode)
   # ===========================================================================
   seatunnel:
-    image: apache/seatunnel:2.3.3
+    image: apache/seatunnel:2.3.8
     container_name: datapipeline-seatunnel
     restart: always
     ports:
