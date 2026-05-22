@@ -6,6 +6,8 @@ services:
     image: mysql:8.0
     container_name: datapipeline-mysql
     restart: always
+    command: --innodb-buffer-pool-size=256M --key-buffer-size=64M --max-connections=100
+    mem_limit: 768m
     ports:
       - "3306:3306"
     environment:
@@ -31,6 +33,7 @@ services:
     image: redis:7.2-alpine
     container_name: datapipeline-redis
     restart: always
+    mem_limit: 256m
     ports:
       - "6379:6379"
     command: redis-server --requirepass 123456
@@ -49,9 +52,10 @@ services:
     image: apache/seatunnel:2.3.8
     container_name: datapipeline-seatunnel
     restart: always
+    mem_limit: 1024m
     ports:
       - "5801:5801"
-    command: ["/opt/seatunnel/bin/seatunnel-cluster.sh", "-r", "master_and_worker"]
+    command: ["/opt/seatunnel/bin/seatunnel-cluster.sh", "-r", "master_and_worker", "-DJvmOption=-Xms512m -Xmx512m -XX:+UseG1GC"]
     volumes:
       - ./seatunnel/connectors:/opt/seatunnel/connectors
 
@@ -64,10 +68,12 @@ services:
       dockerfile: Dockerfile
     container_name: datapipeline-backend
     restart: always
+    mem_limit: 1024m
     ports:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: "--enable-preview -Xms512m -Xmx512m -XX:+UseG1GC"
       # Override database and redis configurations for docker network environment
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/data_pipeline?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
       SPRING_DATASOURCE_USERNAME: "root"
@@ -93,6 +99,7 @@ services:
       dockerfile: Dockerfile
     container_name: datapipeline-nginx
     restart: always
+    mem_limit: 128m
     ports:
       - "80:80"
     volumes:
