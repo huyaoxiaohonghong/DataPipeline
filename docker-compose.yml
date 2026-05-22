@@ -83,12 +83,9 @@ services:
       SPRING_DATA_REDIS_PASSWORD: "123456"
       SEATUNNEL_API_BASE_URL: "http://seatunnel:5801" # Connected to local SeaTunnel cluster
     depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      seatunnel:
-        condition: service_started
+      - mysql
+      - redis
+      - seatunnel
 
   # ===========================================================================
   # Nginx Gateway & Frontend Service (Vue 3 + Vite 6 + Nginx proxy)
