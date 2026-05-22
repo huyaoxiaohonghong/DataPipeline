@@ -70,16 +70,21 @@ services:
         condition: service_healthy
 
   # ===========================================================================
-  # Frontend Service (Vue 3 + Vite 6 + Nginx proxy)
+  # Nginx Gateway & Frontend Service (Vue 3 + Vite 6 + Nginx proxy)
   # ===========================================================================
-  frontend:
+  nginx:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: datapipeline-frontend
+    container_name: datapipeline-nginx
     restart: always
     ports:
       - "80:80"
+    volumes:
+      # Mount Nginx configuration from the host for easy modification and instant reload without image rebuild
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # Mount Nginx logs to the host for easy monitoring and troubleshooting
+      - ./nginx/logs:/var/log/nginx
     depends_on:
       - backend
 
