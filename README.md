@@ -59,7 +59,59 @@ DataPipeline/
     └── vite.config.ts
 ```
 
-## 快速开始
+## Docker 一键部署 (推荐)
+
+项目提供了基于 Docker 和 Docker Compose 的一键部署脚本 `install.sh`。该脚本会自动检测您的 Linux 环境是否已安装 Docker 及 Docker Compose。若未安装，它会提示并自动安装相关环境，然后自动构建并启动本系统。
+
+### 部署步骤
+
+1. **克隆项目到 Linux 服务器**：
+   ```bash
+   git clone https://github.com/huyaoxiaohonghong/DataPipeline.git
+   cd DataPipeline
+   ```
+
+2. **赋予一键脚本执行权限**：
+   ```bash
+   chmod +x install.sh
+   ```
+
+3. **执行部署脚本（自动完成 Docker 安装与项目部署）**：
+   ```bash
+   ./install.sh
+   ```
+
+   *该脚本将自动为您处理以下过程：*
+   *   检查并提示安装 `Docker` 环境（若缺失则自动下载并安装）
+   *   检查并激活 `Docker` 系统服务
+   *   检查并提示安装 `Docker Compose` 环境（若缺失则自动下载并配置）
+   *   一键构建并启动后端（JDK 25 + Spring Boot 4）、前端（Nginx + Vue 3）及数据库（MySQL 8 + Redis 7）
+
+4. **系统访问地址**：
+   *   **前端网页入口**：`http://服务器IP:80`
+   *   **后端 API 服务**：`http://服务器IP:8080`
+   *   **默认内置账号**：
+       *   超级管理员：`admin / admin@123`
+       *   普通用户：`test / test123`
+
+### 常用运维命令
+
+*   **查看容器运行状态**：
+    ```bash
+    docker compose ps  # 或 docker-compose ps
+    ```
+*   **查看容器实时运行日志**：
+    ```bash
+    docker compose logs -f  # 或 docker-compose logs -f
+    ```
+*   **停止并清理容器**：
+    ```bash
+    docker compose down  # 或 docker-compose down
+    ```
+
+---
+
+## 本地手动开发与启动
 
 ### 后端
 
