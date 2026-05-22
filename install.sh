@@ -64,6 +64,29 @@ if ! command -v docker &> /dev/null; then
 else
     DOCKER_VERSION=$(docker --version)
     echo -e "${GREEN}[OK] 检测到 Docker 已安装: ${DOCKER_VERSION}${NC}"
+    
+    # 针对已安装 Docker 的环境，提供配置国内极速镜像源加速器的选项，解决拉取镜像超时/失败问题
+    echo -e "\n${YELLOW}[提示] 由于国内网络限制，从 Docker Hub 拉取镜像（如 mysql:8.0）可能会超时或失败。${NC}"
+    read -p "是否需要自动配置/更新国内 Docker 镜像加速器？(y/n): " config_mirror
+    if [[ "$config_mirror" =~ ^[Yy]$ ]]; then
+        echo -e "正在尝试获取镜像加速器配置脚本..."
+        if curl -fsSL --connect-timeout 8 https://linuxmirrors.cn/docker.sh -o get-docker-cn.sh; then
+            echo -e "正在执行镜像源加速器配置，请根据界面提示交互式选择（推荐选择阿里云、腾讯云等，并自动配置加速器）..."
+            if sudo bash get-docker-cn.sh --only-registry; then
+                echo -e "${GREEN}[OK] Docker 镜像加速器配置并应用成功！${NC}"
+                rm -f get-docker-cn.sh
+                echo -e "正在重新加载并重启 Docker 服务..."
+                sudo systemctl daemon-reload
+                sudo systemctl restart docker
+            else
+                rm -f get-docker-cn.sh
+                echo -e "${YELLOW}[WARN] 镜像配置未完全成功，将尝试继续后续的步骤。${NC}"
+            fi
+        else
+            rm -f get-docker-cn.sh
+            echo -e "${RED}[WARN] 无法从 linuxmirrors.cn 下载配置脚本，请检查网络或稍后手动配置镜像源。${NC}"
+        fi
+    fi
 fi
 
 # 2. 检查 Docker 服务是否正在运行
