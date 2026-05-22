@@ -74,7 +74,7 @@ DROP TABLE IF EXISTS `sys_user`;
 CREATE TABLE `sys_user` (
     `id`          BIGINT        NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `username`    VARCHAR(50)   NOT NULL COMMENT '用户名',
-    `password`    VARCHAR(255)  NOT NULL COMMENT '密码（MD5加密）',
+    `password`    VARCHAR(255)  NOT NULL COMMENT '密码（BCrypt加密）',
     `email`       VARCHAR(100)  DEFAULT NULL COMMENT '邮箱',
     `role`        VARCHAR(20)   NOT NULL DEFAULT 'USER' COMMENT '角色编码',
     `is_deleted`  TINYINT(1)    NOT NULL DEFAULT 0 COMMENT '是否删除: 0-否, 1-是',
@@ -141,13 +141,13 @@ INSERT INTO `sys_role_permission` (`role_id`, `permission_id`) VALUES (3, 1);
 
 -- =============================================================================
 -- 初始化用户数据
--- 密码加密算法: MD5(password + 'Antigravity@2024')
+-- 密码加密算法: BCrypt
 -- =============================================================================
 
 -- 超级管理员账号: admin / admin@123
 INSERT INTO `sys_user` (`username`, `password`, `email`, `role`, `is_deleted`) VALUES
-    ('admin', MD5(CONCAT('admin@123', 'Antigravity@2024')), 'admin@datapipeline.com', 'ADMIN', 0);
+    ('admin', '$2b$10$HOmHPbJZqNK4i/iFDB5JLOjtooQ73rJPFflP3dHeneR/BHLMEiL3W', 'admin@datapipeline.com', 'ADMIN', 0);
 
 -- 测试用户账号: test / test123
 INSERT INTO `sys_user` (`username`, `password`, `email`, `role`, `is_deleted`) VALUES
-    ('test', MD5(CONCAT('test123', 'Antigravity@2024')), 'test@datapipeline.com', 'USER', 0);
+    ('test', '$2b$10$eIk.b4o0zQD7ly3jOsmc6eSnnPHxGaCxmbRSUH4kBHqK/vdgi9Oti', 'test@datapipeline.com', 'USER', 0);

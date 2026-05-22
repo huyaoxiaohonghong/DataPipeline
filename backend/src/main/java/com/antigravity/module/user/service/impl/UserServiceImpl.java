@@ -9,12 +9,11 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.DigestUtils;
-
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,9 +25,10 @@ import java.util.Optional;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
-    private static final String SALT = "Antigravity@2024";
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public Optional<User> findById(Long id) {
@@ -87,7 +87,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     @Transactional(rollbackFor = Exception.class)
     public User createUser(User user) {
-        user.setPassword(encryptPassword(user.getPassword()));
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         if (user.getRole() == null || user.getRole().isBlank()) {
             user.setRole("USER");
         }
@@ -111,14 +111,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return false;
         }
 
-        String encryptedOldPassword = encryptPassword(oldPassword);
-        if (!encryptedOldPassword.equals(user.getPassword())) {
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
             return false;
         }
 
         LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(User::getId, userId)
-                .set(User::getPassword, encryptPassword(newPassword));
+                .set(User::getPassword, passwordEncoder.encode(newPassword));
         return this.update(wrapper);
     }
 
@@ -143,9 +142,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return this.removeByIds(ids);
     }
 
-    private String encryptPassword(String password) {
-        String saltedPassword = password + SALT;
-        return DigestUtils.md5DigestAsHex(saltedPassword.getBytes(StandardCharsets.UTF_8));
-    }
+
 
 }

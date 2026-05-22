@@ -7,7 +7,7 @@
 ### Backend (Spring Boot)
 - **JDK**: 25 (Preview Features Enabled)
 - **Framework**: Spring Boot 4.0.x
-- **ORM**: MyBatis-Flex
+- **ORM**: MyBatis-Plus
 - **Database**: MySQL 8.x
 - **Cache**: Redis 7.x
 - **Connection Pool**: Druid

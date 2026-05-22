@@ -11,12 +11,10 @@ import com.antigravity.module.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.DigestUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-
-import java.nio.charset.StandardCharsets;
 
 /**
  * 认证服务实现
@@ -30,9 +28,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtUtil jwtUtil;
     private final com.antigravity.module.captcha.service.CaptchaService captchaService;
     private final LoginLogService loginLogService;
-
-    // 临时使用 MD5 加密（与现有用户密码兼容）
-    private static final String SALT = "Antigravity@2024";
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -77,9 +73,8 @@ public class AuthServiceImpl implements AuthService {
                     return BusinessException.of(401, "用户名或密码错误");
                 });
 
-        // 验证密码（使用 MD5 + Salt）
-        String encryptedPassword = encryptPassword(request.getPassword());
-        if (!encryptedPassword.equals(user.getPassword())) {
+        // 验证密码（使用 BCrypt）
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             log.warn("用户登录失败，密码错误: username={}", request.getUsername());
             // 记录登录失败日志
             loginLogService.asyncRecordLoginLog(request.getUsername(), ipAddress, userAgent, false, "密码错误");
@@ -140,13 +135,7 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-    /**
-     * 加密密码（MD5 + Salt）
-     */
-    private String encryptPassword(String password) {
-        String saltedPassword = password + SALT;
-        return DigestUtils.md5DigestAsHex(saltedPassword.getBytes(StandardCharsets.UTF_8));
-    }
+
 
     /**
      * 获取客户端真实IP
