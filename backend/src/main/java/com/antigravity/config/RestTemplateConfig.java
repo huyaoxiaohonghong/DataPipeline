@@ -1,5 +1,6 @@
 package com.antigravity.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +25,11 @@ public class RestTemplateConfig {
         factory.setConnectTimeout(seaTunnelProperties.getTimeout());
         factory.setReadTimeout(seaTunnelProperties.getTimeout());
         return new RestTemplate(factory);
+    }
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
     }
 
 }
