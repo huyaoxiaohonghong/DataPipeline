@@ -30,7 +30,7 @@ services:
   # PostgreSQL Database Service (PostgreSQL 16)
   # ===========================================================================
   postgresql:
-    image: postgres:latest
+    image: postgres:17
     container_name: datapipeline-postgres
     restart: always
     mem_limit: 256m
