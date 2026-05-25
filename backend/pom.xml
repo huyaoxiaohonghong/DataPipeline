@@ -98,6 +98,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- PostgreSQL Connector -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- HikariCP Connection Pool is included by default in spring-boot-starter-jdbc -->
 
         <!-- Lombok -->
