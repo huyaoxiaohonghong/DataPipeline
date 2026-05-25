@@ -41,4 +41,25 @@ public class SeaTunnelController {
         return Result.success(jobs);
     }
 
+    /**
+     * 获取指定任务的详情
+     */
+    @GetMapping("/job/{jobId}")
+    public Result<Map<String, Object>> jobDetail(@PathVariable String jobId) {
+        Map<String, Object> jobInfo = seaTunnelClient.getJobInfo(jobId);
+        if (jobInfo.isEmpty()) {
+            return Result.error("未找到任务或 SeaTunnel 服务不可用");
+        }
+        return Result.success(jobInfo);
+    }
+
+    /**
+     * 停止指定任务
+     */
+    @PostMapping("/job/{jobId}/stop")
+    public Result<Void> stopJob(@PathVariable String jobId) {
+        boolean success = seaTunnelClient.stopJob(jobId);
+        return success ? Result.success("任务停止请求已发送", null) : Result.error("停止任务失败");
+    }
+
 }

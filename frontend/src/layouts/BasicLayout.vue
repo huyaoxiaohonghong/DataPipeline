@@ -18,7 +18,12 @@ import {
   FullscreenExitOutlined,
   SkinOutlined,
   FileProtectOutlined,
-  LoginOutlined
+  LoginOutlined,
+  DatabaseOutlined,
+  ClusterOutlined,
+  SyncOutlined,
+  HistoryOutlined,
+  UnorderedListOutlined
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
@@ -49,6 +54,36 @@ const menuItems = [
     icon: DashboardOutlined,
     label: '仪表盘',
     path: '/dashboard'
+  },
+  {
+    key: 'DataSourceList',
+    icon: DatabaseOutlined,
+    label: '数据源管理',
+    path: '/datasources'
+  },
+  {
+    key: 'SeaTunnelDashboard',
+    icon: ClusterOutlined,
+    label: '集群看板',
+    path: '/seatunnel/dashboard'
+  },
+  {
+    key: 'SeaTunnelJobs',
+    icon: UnorderedListOutlined,
+    label: 'SeaTunnel 任务',
+    path: '/seatunnel/jobs'
+  },
+  {
+    key: 'SyncConfigList',
+    icon: SyncOutlined,
+    label: '同步配置',
+    path: '/sync/configs'
+  },
+  {
+    key: 'SyncTaskList',
+    icon: HistoryOutlined,
+    label: '同步任务',
+    path: '/sync/tasks'
   },
   {
     key: 'UserList',

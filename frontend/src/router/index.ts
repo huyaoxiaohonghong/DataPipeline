@@ -19,6 +19,36 @@ const routes: RouteRecordRaw[] = [
                 meta: { title: '仪表盘', icon: 'DashboardOutlined' }
             },
             {
+                path: 'datasources',
+                name: 'DataSourceList',
+                component: () => import('@/views/datasource/ConnectionList.vue'),
+                meta: { title: '数据源管理', icon: 'DatabaseOutlined' }
+            },
+            {
+                path: 'seatunnel/dashboard',
+                name: 'SeaTunnelDashboard',
+                component: () => import('@/views/seatunnel/ClusterDashboard.vue'),
+                meta: { title: '集群看板', icon: 'ClusterOutlined' }
+            },
+            {
+                path: 'seatunnel/jobs',
+                name: 'SeaTunnelJobs',
+                component: () => import('@/views/seatunnel/JobList.vue'),
+                meta: { title: 'SeaTunnel 任务', icon: 'UnorderedListOutlined' }
+            },
+            {
+                path: 'sync/configs',
+                name: 'SyncConfigList',
+                component: () => import('@/views/sync/ConfigList.vue'),
+                meta: { title: '同步配置', icon: 'SyncOutlined' }
+            },
+            {
+                path: 'sync/tasks',
+                name: 'SyncTaskList',
+                component: () => import('@/views/sync/TaskList.vue'),
+                meta: { title: '同步任务', icon: 'HistoryOutlined' }
+            },
+            {
                 path: 'users',
                 name: 'UserList',
                 component: () => import('@/views/user/UserList.vue'),

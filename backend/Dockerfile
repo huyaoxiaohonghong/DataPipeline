@@ -4,6 +4,7 @@
 
 # Stage 1: Build the application using Eclipse Temurin JDK 25 and Maven
 FROM eclipse-temurin:25-jdk-alpine AS build
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk add --no-cache maven
 WORKDIR /app
 
