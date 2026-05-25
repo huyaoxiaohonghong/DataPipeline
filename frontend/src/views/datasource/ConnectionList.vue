@@ -373,7 +373,7 @@ onMounted(() => {
                 </a-select-option>
               </a-select>
             </a-form-item>
-          </col>
+          </a-col>
         </a-row>
 
         <a-row :gutter="16">
