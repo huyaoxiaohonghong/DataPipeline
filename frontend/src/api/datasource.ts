@@ -118,6 +118,16 @@ export const datasourceApi = {
      * 获取指定表的列元数据信息
      */
     getColumns(id: number, tableName: string) {
-        return get<ColumnMetadata[]>(`${BASE_URL}/${id}/tables/${tableName}/columns`)
+        return get<any[]>(`${BASE_URL}/${id}/tables/${tableName}/columns`).then(res => {
+            if (res && res.code === 200 && Array.isArray(res.data)) {
+                res.data = res.data.map((item: any) => ({
+                    columnName: item.columnName || item.name || '',
+                    dataType: item.dataType || item.type || '',
+                    columnComment: item.columnComment || item.comment || '',
+                    isPrimaryKey: item.isPrimaryKey || item.primaryKey || false
+                })) as any
+            }
+            return res as any
+        })
     }
 }

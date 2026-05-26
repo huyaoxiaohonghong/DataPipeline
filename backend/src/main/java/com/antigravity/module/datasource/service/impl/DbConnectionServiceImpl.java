@@ -141,11 +141,19 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
             try (ResultSet rs = metaData.getColumns(catalog, schema, tableName, "%")) {
                 while (rs.next()) {
                     Map<String, String> col = new LinkedHashMap<>();
-                    col.put("name", rs.getString("COLUMN_NAME"));
-                    col.put("type", rs.getString("TYPE_NAME"));
+                    String columnName = rs.getString("COLUMN_NAME");
+                    String dataType = rs.getString("TYPE_NAME");
+                    String comment = rs.getString("REMARKS");
+                    
+                    col.put("name", columnName);
+                    col.put("columnName", columnName);
+                    col.put("type", dataType);
+                    col.put("dataType", dataType);
                     col.put("size", rs.getString("COLUMN_SIZE"));
                     col.put("nullable", rs.getString("IS_NULLABLE"));
-                    col.put("comment", rs.getString("REMARKS"));
+                    col.put("comment", comment);
+                    col.put("columnComment", comment);
+                    
                     columns.add(col);
                 }
             }

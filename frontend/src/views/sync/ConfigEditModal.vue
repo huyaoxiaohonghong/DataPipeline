@@ -208,9 +208,10 @@ const autoMatchFields = () => {
   let count = 0
 
   sourceColumns.value.forEach((src) => {
+    if (!src || !src.columnName) return
     // 匹配同名且大小写无关的字段
     const matched = targetColumns.value.find(
-      (tgt) => tgt.columnName.toLowerCase() === src.columnName.toLowerCase()
+      (tgt) => tgt && tgt.columnName && tgt.columnName.toLowerCase() === src.columnName.toLowerCase()
     )
     if (matched) {
       mappings.push({
@@ -247,12 +248,12 @@ const removeMappingRow = (index: number) => {
 
 // 映射字段修改时自动填充类型
 const handleSourceFieldSelect = (val: string, index: number) => {
-  const col = sourceColumns.value.find(c => c.columnName === val)
+  const col = sourceColumns.value.find(c => c && c.columnName === val)
   if (col) {
     formModel.value.fieldMappings[index].sourceType = col.dataType
     // 如果目标字段是空的，且目标表中有同名字段，自动匹配过去
     if (!formModel.value.fieldMappings[index].targetField) {
-      const tgt = targetColumns.value.find(c => c.columnName.toLowerCase() === val.toLowerCase())
+      const tgt = targetColumns.value.find(c => c && c.columnName && val && c.columnName.toLowerCase() === val.toLowerCase())
       if (tgt) {
         formModel.value.fieldMappings[index].targetField = tgt.columnName
         formModel.value.fieldMappings[index].targetType = tgt.dataType
@@ -262,7 +263,7 @@ const handleSourceFieldSelect = (val: string, index: number) => {
 }
 
 const handleTargetFieldSelect = (val: string, index: number) => {
-  const col = targetColumns.value.find(c => c.columnName === val)
+  const col = targetColumns.value.find(c => c && c.columnName === val)
   if (col) {
     formModel.value.fieldMappings[index].targetType = col.dataType
   }
