@@ -166,18 +166,23 @@ public class SeaTunnelConfigBuilder {
         sink.put("driver", getJdbcDriver(targetDb.getDbType()));
         sink.put("user", targetDb.getUsername());
         sink.put("password", targetDb.getPassword());
-
-        // SeaTunnel JDBC Sink 的 "database" 字段会作为 SQL 中表名的 schema 前缀，
-        // 例如 INSERT INTO "database"."table"。
-        // 对 PostgreSQL：数据库名已在 JDBC URL 中指定，此处应为 schema 名（默认 public），
-        //   否则会生成错误的 "postgres"."student" 引用。
-        // 对 MySQL 等：database 即为数据库名，与 schema 概念一致。
+        // PostgreSQL 特殊处理：
+        // SeaTunnel 的 PostgresCatalog 从 JDBC URL 解析 database name 构建 TablePath，
+        // 会覆盖 config 中 database 字段的值。因此 database 字段必须保留真实数据库名。
+        // 要控制 SQL 中的 schema 前缀（如 INSERT INTO "public"."student"），
+        // 需要在 table 字段中显式指定 schema：SeaTunnel 会将 "public.student"
+        // 解析为 schema=public, table=student。
+        sink.put("database", targetDb.getDatabaseName());
         if ("POSTGRESQL".equalsIgnoreCase(targetDb.getDbType())) {
-            sink.put("database", "public");
+            String tableName = config.getTargetTable();
+            // 如果用户未指定 schema 前缀，自动添加 public schema
+            if (!tableName.contains(".")) {
+                tableName = "public." + tableName;
+            }
+            sink.put("table", tableName);
         } else {
-            sink.put("database", targetDb.getDatabaseName());
+            sink.put("table", config.getTargetTable());
         }
-        sink.put("table", config.getTargetTable());
 
         // 自动建表
         sink.put("generate_sink_sql", true);
