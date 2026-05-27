@@ -173,14 +173,16 @@ public class SeaTunnelConfigBuilder {
         sink.put("generate_sink_sql", true);
 
         // Save Mode 配置
-        // 注意: SeaTunnel 2.3.x PostgresCatalog 的 CREATE_SCHEMA_WHEN_NOT_EXIST
-        // 在目标表已存在时会触发 "relation already exists" 错误，
-        // 因此全量同步使用 RECREATE_SCHEMA（先删后建），增量同步使用 IGNORE（跳过建表）
+        // 注意: SeaTunnel 2.3.x PostgresCatalog 的自动建表存在 bug，
+        // CREATE_SCHEMA_WHEN_NOT_EXIST 和 RECREATE_SCHEMA 均会触发
+        // "relation already exists" 错误（dropTable 未生效即执行 CREATE TABLE），
+        // 因此统一使用 IGNORE 跳过 Schema 处理，目标表需预先存在。
+        sink.put("schema_save_mode", "IGNORE");
+
+        // 全量同步清空目标表后写入，增量同步追加数据
         if ("FULL".equalsIgnoreCase(config.getSyncMode())) {
-            sink.put("schema_save_mode", "RECREATE_SCHEMA");
             sink.put("data_save_mode", "DROP_DATA");
         } else {
-            sink.put("schema_save_mode", "IGNORE");
             sink.put("data_save_mode", "APPEND_DATA");
         }
 
