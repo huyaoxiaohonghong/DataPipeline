@@ -166,6 +166,7 @@ public class SeaTunnelConfigBuilder {
         sink.put("driver", getJdbcDriver(targetDb.getDbType()));
         sink.put("user", targetDb.getUsername());
         sink.put("password", targetDb.getPassword());
+        sink.put("database", targetDb.getDatabaseName());
         sink.put("table", config.getTargetTable());
 
         // 自动建表
