@@ -71,15 +71,16 @@ services:
   # Apache SeaTunnel (Zeta Engine Standalone Mode)
   # ===========================================================================
   seatunnel:
-    image: apache/seatunnel:2.3.8
+    build:
+      context: ./seatunnel
+      dockerfile: Dockerfile
+    image: datapipeline-seatunnel:2.3.8
     container_name: datapipeline-seatunnel
     restart: always
     mem_limit: 1024m
     ports:
       - "5801:5801"
     command: ["/opt/seatunnel/bin/seatunnel-cluster.sh", "-DJvmOption=-Xms512m -Xmx512m -XX:+UseG1GC"]
-    volumes:
-      - ./seatunnel/connectors:/opt/seatunnel/connectors
 
   # ===========================================================================
   # Backend Spring Boot Service (JDK 25 + Virtual Threads)
