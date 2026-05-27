@@ -9,7 +9,8 @@ import {
   PlusOutlined,
   DeleteOutlined,
   ExperimentOutlined,
-  SlidersOutlined
+  SlidersOutlined,
+  ThunderboltOutlined
 } from '@ant-design/icons-vue'
 
 const props = defineProps<{
@@ -198,6 +199,11 @@ const handleTargetTableChange = async (val: string, clearColumns = true) => {
   }
 }
 
+// 是否为全量同步自动建表模式（全量 + 目标表留空或与源表同名）
+const isAutoCreateMode = computed(() => {
+  return formModel.value.syncMode === 'FULL'
+})
+
 // 自动匹配字段映射
 const autoMatchFields = () => {
   if (sourceColumns.value.length === 0 || targetColumns.value.length === 0) {
@@ -227,6 +233,24 @@ const autoMatchFields = () => {
 
   formModel.value.fieldMappings = mappings
   message.success(`智能分析完成：自动匹配了 ${mappings.length} 个同名字段！`)
+}
+
+// 全量模式自动建表：从源表结构生成同名映射
+const autoGenerateMappingsFromSource = () => {
+  if (sourceColumns.value.length === 0) {
+    return message.warning('源表结构信息未加载，请返回步骤二选择源表')
+  }
+
+  const mappings: FieldMappingDTO[] = sourceColumns.value.map((src, index) => ({
+    sourceField: src.columnName,
+    sourceType: src.dataType,
+    targetField: src.columnName,
+    targetType: src.dataType,
+    transformExpr: '',
+    sortOrder: index
+  }))
+
+  formModel.value.fieldMappings = mappings
 }
 
 // 手动增加一行映射
@@ -281,10 +305,17 @@ const nextStep = () => {
     if (!formModel.value.sourceTable) return message.warning('请选择源数据表')
   } else if (currentStep.value === 2) {
     if (!formModel.value.targetDbId) return message.warning('请选择目标数据库')
-    if (!formModel.value.targetTable) return message.warning('请选择目标数据表')
-    
-    // 进入映射页面时，如果映射为空，进行一次自动匹配
-    if (formModel.value.fieldMappings.length === 0) {
+    // 增量模式下目标表必选
+    if (formModel.value.syncMode === 'INCREMENTAL' && !formModel.value.targetTable) {
+      return message.warning('增量模式下必须选择目标数据表')
+    }
+
+    // 进入映射页面时，根据模式自动处理
+    if (isAutoCreateMode.value && !formModel.value.targetTable) {
+      // 全量自动建表模式：从源表结构自动生成映射
+      autoGenerateMappingsFromSource()
+    } else if (formModel.value.fieldMappings.length === 0) {
+      // 有目标表时尝试自动匹配同名字段
       autoMatchFields()
     }
   }
@@ -297,27 +328,38 @@ const prevStep = () => {
 
 // 保存配置
 const handleSave = async () => {
-  if (formModel.value.fieldMappings.length === 0) {
+  // 全量自动建表模式允许空映射，增量模式必须有映射
+  if (!isAutoCreateMode.value && formModel.value.fieldMappings.length === 0) {
     return message.warning('请配置至少一个字段映射！')
   }
 
-  // 校验映射中是否包含空字段
-  const hasInvalid = formModel.value.fieldMappings.some(m => !m.sourceField || !m.targetField)
-  if (hasInvalid) {
-    return message.warning('映射字段列表中源字段或目标字段不能为空')
+  // 校验映射中是否包含空字段（仅非空映射列表时校验）
+  if (formModel.value.fieldMappings.length > 0) {
+    const hasInvalid = formModel.value.fieldMappings.some(m => !m.sourceField || !m.targetField)
+    if (hasInvalid) {
+      return message.warning('映射字段列表中源字段或目标字段不能为空')
+    }
   }
 
   saving.value = true
   try {
+    // 构建提交数据
+    const submitData: any = { ...formModel.value }
+
+    // 全量自动建表模式：不传 fieldMappings，让 SeaTunnel 自动推导
+    if (isAutoCreateMode.value && !formModel.value.targetTable) {
+      submitData.fieldMappings = undefined
+    }
+
     if (props.configId) {
-      const res = await syncApi.updateConfig(props.configId, formModel.value as any)
+      const res = await syncApi.updateConfig(props.configId, submitData)
       if (res.code === 200) {
         message.success('更新同步配置成功！')
         visible.value = false
         emit('success')
       }
     } else {
-      const res = await syncApi.createConfig(formModel.value as any)
+      const res = await syncApi.createConfig(submitData)
       if (res.code === 200) {
         message.success('创建同步配置成功！')
         visible.value = false
@@ -441,7 +483,24 @@ const handleSave = async () => {
                 </a-select-option>
               </a-select>
             </a-form-item>
-            <a-form-item label="目标数据表" required>
+
+            <!-- 全量同步：目标表可选，支持手动输入或留空自动使用源表名 -->
+            <a-form-item v-if="isAutoCreateMode" label="目标数据表">
+              <a-input
+                v-model:value="formModel.targetTable"
+                :placeholder="`留空则自动使用源表名: ${formModel.sourceTable}`"
+                :disabled="!formModel.targetDbId"
+                allow-clear
+              />
+              <template #extra>
+                <span class="step-info">
+                  <ThunderboltOutlined class="mr-8" />全量同步模式：留空将自动在目标库中创建与源表同名的表，字段结构由 SeaTunnel 自动推导
+                </span>
+              </template>
+            </a-form-item>
+
+            <!-- 增量同步：目标表必选，使用下拉选择 -->
+            <a-form-item v-else label="目标数据表" required>
               <a-select
                 v-model:value="formModel.targetTable"
                 placeholder="请选择写入目标表"
@@ -468,89 +527,138 @@ const handleSave = async () => {
 
         <!-- 步骤 3: 字段映射配置 -->
         <div v-if="currentStep === 3">
-          <div class="mapping-toolbar flex-between mb-16">
-            <div class="left flex">
-              <span class="title"><SlidersOutlined class="mr-8 text-primary" />映射字段矩阵</span>
-              <a-tag color="cyan" class="ml-8">已配置: {{ formModel.fieldMappings.length }} 个映射</a-tag>
-            </div>
-            <div class="right">
-              <a-button type="dashed" class="mr-8" @click="autoMatchFields">
-                <template #icon><ExperimentOutlined /></template>智能同名映射
-              </a-button>
-              <a-button type="primary" size="small" @click="addMappingRow">
-                <template #icon><PlusOutlined /></template>增加一行
-              </a-button>
-            </div>
-          </div>
-
-          <!-- 字段映射表格容器 -->
-          <div class="mapping-table-container">
-            <div class="mapping-table-header flex">
-              <div class="col-field">源表字段 (Source)</div>
-              <div class="col-arrow"></div>
-              <div class="col-field">目标表字段 (Target)</div>
-              <div class="col-expr">转换表达式 (Expression)</div>
-              <div class="col-action"></div>
-            </div>
-
-            <div class="mapping-rows">
-              <div
-                v-for="(mapping, index) in formModel.fieldMappings"
-                :key="index"
-                class="mapping-row flex"
-              >
-                <!-- 源字段选择 -->
-                <div class="col-field">
-                  <a-select
-                    v-model:value="mapping.sourceField"
-                    placeholder="源字段"
-                    show-search
-                    style="width: 100%;"
-                    @change="(val: any) => handleSourceFieldSelect(val, index)"
-                  >
-                    <a-select-option v-for="col in sourceColumns" :key="col.columnName" :value="col.columnName">
-                      {{ col.columnName }} <span class="type-tag">{{ col.dataType }}</span>
-                    </a-select-option>
-                  </a-select>
-                </div>
-
-                <!-- 关系箭头 -->
-                <div class="col-arrow flex-center">
-                  <ArrowRightOutlined class="text-primary" />
-                </div>
-
-                <!-- 目标字段选择 -->
-                <div class="col-field">
-                  <a-select
-                    v-model:value="mapping.targetField"
-                    placeholder="目标字段"
-                    show-search
-                    style="width: 100%;"
-                    @change="(val: any) => handleTargetFieldSelect(val, index)"
-                  >
-                    <a-select-option v-for="col in targetColumns" :key="col.columnName" :value="col.columnName">
-                      {{ col.columnName }} <span class="type-tag">{{ col.dataType }}</span>
-                    </a-select-option>
-                  </a-select>
-                </div>
-
-                <!-- 转换表达式 -->
-                <div class="col-expr">
-                  <a-input
-                    v-model:value="mapping.transformExpr"
-                    placeholder="如: cast(col as string) 或留空"
-                  />
-                </div>
-
-                <!-- 行删除 -->
-                <div class="col-action flex-center">
-                  <a-button type="text" danger @click="removeMappingRow(index)">
-                    <template #icon><DeleteOutlined /></template>
-                  </a-button>
+          <!-- 全量自动建表模式：只读预览 -->
+          <template v-if="isAutoCreateMode && !formModel.targetTable">
+            <div class="auto-create-banner page-card mb-16">
+              <div class="banner-content">
+                <ThunderboltOutlined class="banner-icon" />
+                <div>
+                  <h4>自动建表模式</h4>
+                  <p>SeaTunnel 将自动在目标库中创建表 <a-tag color="blue">{{ formModel.sourceTable }}</a-tag>，字段结构从源表自动推导，无需手动配置映射。</p>
                 </div>
               </div>
             </div>
-          </div>
+
+            <div class="mapping-toolbar flex-between mb-16">
+              <div class="left flex">
+                <span class="title"><SlidersOutlined class="mr-8 text-primary" />源表结构预览（将同步至目标库）</span>
+                <a-tag color="green" class="ml-8">共 {{ sourceColumns.length }} 个字段</a-tag>
+              </div>
+            </div>
+
+            <div class="mapping-table-container">
+              <div class="mapping-table-header flex">
+                <div class="col-field">字段名</div>
+                <div class="col-arrow"></div>
+                <div class="col-field">字段类型</div>
+                <div class="col-expr">说明</div>
+              </div>
+              <div class="mapping-rows">
+                <div v-for="col in sourceColumns" :key="col.columnName" class="mapping-row flex">
+                  <div class="col-field">
+                    <a-tag :color="col.isPrimaryKey ? 'orange' : 'default'">{{ col.columnName }}</a-tag>
+                  </div>
+                  <div class="col-arrow flex-center">
+                    <ArrowRightOutlined class="text-primary" />
+                  </div>
+                  <div class="col-field">
+                    <span class="type-display">{{ col.dataType }}</span>
+                  </div>
+                  <div class="col-expr">
+                    <span class="step-info" v-if="col.isPrimaryKey">主键</span>
+                    <span class="step-info" v-else>自动映射</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- 手动映射模式（增量同步 或 全量+指定了目标表） -->
+          <template v-else>
+            <div class="mapping-toolbar flex-between mb-16">
+              <div class="left flex">
+                <span class="title"><SlidersOutlined class="mr-8 text-primary" />映射字段矩阵</span>
+                <a-tag color="cyan" class="ml-8">已配置: {{ formModel.fieldMappings.length }} 个映射</a-tag>
+              </div>
+              <div class="right">
+                <a-button type="dashed" class="mr-8" @click="autoMatchFields">
+                  <template #icon><ExperimentOutlined /></template>智能同名映射
+                </a-button>
+                <a-button type="primary" size="small" @click="addMappingRow">
+                  <template #icon><PlusOutlined /></template>增加一行
+                </a-button>
+              </div>
+            </div>
+
+            <!-- 字段映射表格容器 -->
+            <div class="mapping-table-container">
+              <div class="mapping-table-header flex">
+                <div class="col-field">源表字段 (Source)</div>
+                <div class="col-arrow"></div>
+                <div class="col-field">目标表字段 (Target)</div>
+                <div class="col-expr">转换表达式 (Expression)</div>
+                <div class="col-action"></div>
+              </div>
+
+              <div class="mapping-rows">
+                <div
+                  v-for="(mapping, index) in formModel.fieldMappings"
+                  :key="index"
+                  class="mapping-row flex"
+                >
+                  <!-- 源字段选择 -->
+                  <div class="col-field">
+                    <a-select
+                      v-model:value="mapping.sourceField"
+                      placeholder="源字段"
+                      show-search
+                      style="width: 100%;"
+                      @change="(val: any) => handleSourceFieldSelect(val, index)"
+                    >
+                      <a-select-option v-for="col in sourceColumns" :key="col.columnName" :value="col.columnName">
+                        {{ col.columnName }} <span class="type-tag">{{ col.dataType }}</span>
+                      </a-select-option>
+                    </a-select>
+                  </div>
+
+                  <!-- 关系箭头 -->
+                  <div class="col-arrow flex-center">
+                    <ArrowRightOutlined class="text-primary" />
+                  </div>
+
+                  <!-- 目标字段选择 -->
+                  <div class="col-field">
+                    <a-select
+                      v-model:value="mapping.targetField"
+                      placeholder="目标字段"
+                      show-search
+                      style="width: 100%;"
+                      @change="(val: any) => handleTargetFieldSelect(val, index)"
+                    >
+                      <a-select-option v-for="col in targetColumns" :key="col.columnName" :value="col.columnName">
+                        {{ col.columnName }} <span class="type-tag">{{ col.dataType }}</span>
+                      </a-select-option>
+                    </a-select>
+                  </div>
+
+                  <!-- 转换表达式 -->
+                  <div class="col-expr">
+                    <a-input
+                      v-model:value="mapping.transformExpr"
+                      placeholder="如: cast(col as string) 或留空"
+                    />
+                  </div>
+
+                  <!-- 行删除 -->
+                  <div class="col-action flex-center">
+                    <a-button type="text" danger @click="removeMappingRow(index)">
+                      <template #icon><DeleteOutlined /></template>
+                    </a-button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
 
@@ -693,5 +801,43 @@ const handleSave = async () => {
 
 .wizard-footer {
   border-top: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.auto-create-banner {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.06), rgba(82, 196, 26, 0.06));
+  border: 1px solid rgba(24, 144, 255, 0.2);
+
+  .banner-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .banner-icon {
+    font-size: 28px;
+    color: #1890ff;
+    margin-top: 2px;
+  }
+
+  h4 {
+    margin: 0 0 4px 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--heading-color);
+  }
+
+  p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-color-secondary);
+    line-height: 1.6;
+  }
+}
+
+.type-display {
+  font-size: 13px;
+  color: var(--text-color-secondary);
+  font-family: 'SFMono-Regular', Consolas, monospace;
 }
 </style>

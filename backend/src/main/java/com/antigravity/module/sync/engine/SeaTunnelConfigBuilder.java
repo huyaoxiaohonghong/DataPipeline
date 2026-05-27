@@ -182,17 +182,22 @@ public class SeaTunnelConfigBuilder {
         // 自动建表
         sink.put("generate_sink_sql", true);
 
-        // Save Mode 配置
-        // 注意: SeaTunnel 2.3.x PostgresCatalog 的自动建表存在 bug，
-        // CREATE_SCHEMA_WHEN_NOT_EXIST 和 RECREATE_SCHEMA 均会触发
-        // "relation already exists" 错误（dropTable 未生效即执行 CREATE TABLE），
-        // 因此统一使用 IGNORE 跳过 Schema 处理，目标表需预先存在。
-        sink.put("schema_save_mode", "IGNORE");
+        boolean isFullSync = "FULL".equalsIgnoreCase(config.getSyncMode());
+        boolean hasFieldMappings = mappings != null && !mappings.isEmpty();
 
-        // 全量同步清空目标表后写入，增量同步追加数据
-        if ("FULL".equalsIgnoreCase(config.getSyncMode())) {
+        // Save Mode 配置
+        // 全量同步 + 无字段映射 = 自动建表模式：
+        //   使用 RECREATE_SCHEMA 让 SeaTunnel 自动根据源表结构在目标库创建表
+        //   （先删后建，确保目标表结构与源表一致）
+        // 其他情况：使用 IGNORE 跳过 Schema 处理（目标表需预先存在）
+        if (isFullSync && !hasFieldMappings) {
+            sink.put("schema_save_mode", "RECREATE_SCHEMA");
+            sink.put("data_save_mode", "DROP_DATA");
+        } else if (isFullSync) {
+            sink.put("schema_save_mode", "IGNORE");
             sink.put("data_save_mode", "DROP_DATA");
         } else {
+            sink.put("schema_save_mode", "IGNORE");
             sink.put("data_save_mode", "APPEND_DATA");
         }
 

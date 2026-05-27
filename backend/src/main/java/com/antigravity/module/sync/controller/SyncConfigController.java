@@ -95,13 +95,26 @@ public class SyncConfigController {
             return Result.badRequest("增量模式必须指定增量字段");
         }
 
+        // 增量模式必须指定目标表
+        if ("INCREMENTAL".equals(request.getSyncMode())
+                && (request.getTargetTable() == null || request.getTargetTable().isBlank())) {
+            return Result.badRequest("增量模式必须指定目标数据表");
+        }
+
+        // 全量模式：targetTable 为空时自动使用源表名
+        String targetTable = request.getTargetTable();
+        if ("FULL".equals(request.getSyncMode())
+                && (targetTable == null || targetTable.isBlank())) {
+            targetTable = request.getSourceTable();
+        }
+
         SyncConfig config = new SyncConfig();
         config.setName(request.getName());
         config.setDescription(request.getDescription());
         config.setSourceDbId(request.getSourceDbId());
         config.setSourceTable(request.getSourceTable());
         config.setTargetDbId(request.getTargetDbId());
-        config.setTargetTable(request.getTargetTable());
+        config.setTargetTable(targetTable);
         config.setSyncMode(request.getSyncMode());
         config.setIncrementalField(request.getIncrementalField());
 

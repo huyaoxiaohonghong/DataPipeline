@@ -40,10 +40,10 @@ export interface SyncConfigCreateRequest {
   sourceDbId: number
   sourceTable: string
   targetDbId: number
-  targetTable: string
+  targetTable?: string
   syncMode: 'FULL' | 'INCREMENTAL'
   incrementalField?: string
-  fieldMappings: FieldMappingDTO[]
+  fieldMappings?: FieldMappingDTO[]
 }
 
 export interface SyncConfigUpdateRequest {

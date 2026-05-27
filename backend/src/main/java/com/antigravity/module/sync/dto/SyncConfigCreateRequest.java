@@ -32,7 +32,6 @@ public class SyncConfigCreateRequest {
     @NotNull(message = "目标数据库连接ID不能为空")
     private Long targetDbId;
 
-    @NotBlank(message = "目标表名不能为空")
     @Size(max = 200, message = "目标表名长度不能超过 200 个字符")
     private String targetTable;
 
