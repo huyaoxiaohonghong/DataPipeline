@@ -172,6 +172,16 @@ public class SeaTunnelConfigBuilder {
         // 自动建表
         sink.put("generate_sink_sql", true);
 
+        // Save Mode: 表已存在时不重复创建，避免 "relation already exists" 错误
+        sink.put("schema_save_mode", "CREATE_SCHEMA_WHEN_NOT_EXIST");
+
+        // 全量同步清空目标表后写入，增量同步追加数据
+        if ("FULL".equalsIgnoreCase(config.getSyncMode())) {
+            sink.put("data_save_mode", "DROP_DATA");
+        } else {
+            sink.put("data_save_mode", "APPEND_DATA");
+        }
+
         return sink;
     }
 
