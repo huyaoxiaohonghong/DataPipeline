@@ -61,4 +61,14 @@ public class PostgreSqlDialect implements DatabaseDialect {
     public String getDefaultSchema(String databaseName) {
         return DEFAULT_SCHEMA;
     }
+
+    @Override
+    public String getSinkDatabaseName(String databaseName, String tableName) {
+        // PostgreSQL JDBC Sink 中，将 database 属性配置为 Schema 名字，
+        // table 属性配置为裸表名，SeaTunnel 拼接后即可生成 "schema"."table" 的合法双段式标识符。
+        if (tableName != null && tableName.contains(".")) {
+            return tableName.substring(0, tableName.indexOf('.'));
+        }
+        return DEFAULT_SCHEMA;
+    }
 }

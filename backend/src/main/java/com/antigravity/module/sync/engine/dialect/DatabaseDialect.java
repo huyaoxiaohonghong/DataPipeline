@@ -85,4 +85,24 @@ public interface DatabaseDialect {
      * @return 默认 Schema 名，无则返回 null
      */
     String getDefaultSchema(String databaseName);
+
+    /**
+     * 获取 Sink 配置中 "database" 属性的值。
+     * <p>
+     * 在 SeaTunnel JDBC Sink 中，如果开启了 generate_sink_sql，则必须配置 database 字段。
+     * <ul>
+     *   <li>MySQL: 返回物理数据库名。</li>
+     *   <li>PostgreSQL: 返回 Schema 名（如 public），因为 PostgreSQL 不支持三段式表名标识符，
+     *       通过将 database 设为 Schema 名、table 设为裸表名，生成的 SQL 格式为 "schema"."table"，
+     *       方能正常执行。</li>
+     *   <li>Oracle / SQL Server: 返回物理数据库名。</li>
+     * </ul>
+     *
+     * @param databaseName 物理数据库名
+     * @param tableName    表名（可能包含 schema 前缀）
+     * @return 写入 Sink 配置的 database 字段值
+     */
+    default String getSinkDatabaseName(String databaseName, String tableName) {
+        return databaseName;
+    }
 }

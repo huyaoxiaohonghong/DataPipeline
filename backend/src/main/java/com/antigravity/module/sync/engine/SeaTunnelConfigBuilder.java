@@ -179,10 +179,9 @@ public class SeaTunnelConfigBuilder {
         sink.put("user", targetDb.getUsername());
         sink.put("password", targetDb.getPassword());
 
-        // 根据方言决定是否设置 database 字段
-        // PostgreSQL 不能设置此字段，否则 SeaTunnel 会生成三段式表名导致错误
+        // 根据方言决定是否设置 database 字段，并在需要时通过方言获取其适当值（如 PostgreSQL 返回 Schema 名）
         if (dialect.includeDatabaseInSink()) {
-            sink.put("database", targetDb.getDatabaseName());
+            sink.put("database", dialect.getSinkDatabaseName(targetDb.getDatabaseName(), config.getTargetTable()));
         }
 
         // 使用方言格式化 Sink 端表名
