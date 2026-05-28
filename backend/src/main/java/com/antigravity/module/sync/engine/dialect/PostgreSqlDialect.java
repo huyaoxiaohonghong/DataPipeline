@@ -39,13 +39,9 @@ public class PostgreSqlDialect implements DatabaseDialect {
 
     @Override
     public String formatSinkTable(String tableName) {
-        // 关键：PostgreSQL 表名不能添加 schema 前缀！
-        // 如果同时设置 database + schema.table，SeaTunnel 会生成三段式表名
-        // (database.schema.table) 导致 PostgreSQL 报 "relation does not exist" 错误。
-        // 直接使用裸表名，由 PostgreSQL 的 search_path 自动解析到 public schema。
-        if (tableName.contains(".")) {
-            // 用户已指定 schema.table 格式（如 public.student），提取裸表名
-            return tableName.substring(tableName.lastIndexOf('.') + 1);
+        // PostgreSQL 需要 schema.table 格式，默认 schema 为 public
+        if (!tableName.contains(".")) {
+            return DEFAULT_SCHEMA + "." + tableName;
         }
         return tableName;
     }
@@ -59,16 +55,6 @@ public class PostgreSqlDialect implements DatabaseDialect {
 
     @Override
     public String getDefaultSchema(String databaseName) {
-        return DEFAULT_SCHEMA;
-    }
-
-    @Override
-    public String getSinkDatabaseName(String databaseName, String tableName) {
-        // PostgreSQL JDBC Sink 中，将 database 属性配置为 Schema 名字，
-        // table 属性配置为裸表名，SeaTunnel 拼接后即可生成 "schema"."table" 的合法双段式标识符。
-        if (tableName != null && tableName.contains(".")) {
-            return tableName.substring(0, tableName.indexOf('.'));
-        }
         return DEFAULT_SCHEMA;
     }
 }
