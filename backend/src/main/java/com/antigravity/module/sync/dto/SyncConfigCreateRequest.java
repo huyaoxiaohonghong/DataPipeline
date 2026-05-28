@@ -36,7 +36,7 @@ public class SyncConfigCreateRequest {
     private String targetTable;
 
     @NotBlank(message = "同步模式不能为空")
-    @Pattern(regexp = "^(FULL|INCREMENTAL)$", message = "同步模式必须是 FULL 或 INCREMENTAL")
+    @Pattern(regexp = "^(FULL|INCREMENTAL|REALTIME)$", message = "同步模式必须是 FULL、INCREMENTAL 或 REALTIME")
     private String syncMode;
 
     /** 增量字段（增量模式必填） */

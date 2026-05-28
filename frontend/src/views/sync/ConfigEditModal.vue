@@ -40,7 +40,7 @@ const targetColumns = ref<ColumnMetadata[]>([])
 const formModel = ref({
   name: '',
   description: '',
-  syncMode: 'FULL' as 'FULL' | 'INCREMENTAL',
+  syncMode: 'FULL' as 'FULL' | 'INCREMENTAL' | 'REALTIME',
   incrementalField: '',
   sourceDbId: undefined as number | undefined,
   sourceTable: '',
@@ -199,9 +199,9 @@ const handleTargetTableChange = async (val: string, clearColumns = true) => {
   }
 }
 
-// 是否为全量同步自动建表模式（全量 + 目标表留空或与源表同名）
+// 是否为全量或实时流同步自动建表模式（FULL/REALTIME + 目标表留空或与源表同名）
 const isAutoCreateMode = computed(() => {
-  return formModel.value.syncMode === 'FULL'
+  return formModel.value.syncMode === 'FULL' || formModel.value.syncMode === 'REALTIME'
 })
 
 // 自动匹配字段映射
@@ -405,6 +405,7 @@ const handleSave = async () => {
               <a-select v-model:value="formModel.syncMode">
                 <a-select-option value="FULL">FULL (全量同步)</a-select-option>
                 <a-select-option value="INCREMENTAL">INCREMENTAL (增量同步)</a-select-option>
+                <a-select-option value="REALTIME">REALTIME (实时同步 - MySQL CDC)</a-select-option>
               </a-select>
             </a-form-item>
           </a-form>
@@ -489,7 +490,7 @@ const handleSave = async () => {
               />
               <template #extra>
                 <span class="step-info">
-                  <ThunderboltOutlined class="mr-8" />全量同步模式：留空将自动在目标库中创建与源表同名的表，字段结构由 SeaTunnel 自动推导
+                  <ThunderboltOutlined class="mr-8" />全量或实时流同步模式：留空将自动在目标库中创建与源表同名的表，字段结构由 SeaTunnel 自动推导
                 </span>
               </template>
             </a-form-item>

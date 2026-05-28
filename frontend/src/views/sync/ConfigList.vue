@@ -209,6 +209,7 @@ const columns = [
         >
           <a-select-option value="FULL">FULL (全量同步)</a-select-option>
           <a-select-option value="INCREMENTAL">INCREMENTAL (增量同步)</a-select-option>
+          <a-select-option value="REALTIME">REALTIME (实时同步)</a-select-option>
         </a-select>
       </div>
       <div>
@@ -259,8 +260,8 @@ const columns = [
 
           <!-- 同步模式 -->
           <template v-if="column.key === 'syncMode'">
-            <a-tag :color="record.syncMode === 'FULL' ? 'blue' : 'purple'">
-              {{ record.syncMode === 'FULL' ? '全量同步' : '增量同步' }}
+            <a-tag :color="record.syncMode === 'FULL' ? 'blue' : (record.syncMode === 'REALTIME' ? 'green' : 'purple')">
+              {{ record.syncMode === 'FULL' ? '全量同步' : (record.syncMode === 'REALTIME' ? '实时同步' : '增量同步') }}
             </a-tag>
             <div class="incremental-info" v-if="record.syncMode === 'INCREMENTAL'">
               <code class="col-field">{{ record.incrementalField }}</code>

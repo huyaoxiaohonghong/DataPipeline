@@ -31,7 +31,7 @@ public class SyncConfigUpdateRequest {
     @Size(max = 200, message = "目标表名长度不能超过 200 个字符")
     private String targetTable;
 
-    @Pattern(regexp = "^(FULL|INCREMENTAL)$", message = "同步模式必须是 FULL 或 INCREMENTAL")
+    @Pattern(regexp = "^(FULL|INCREMENTAL|REALTIME)$", message = "同步模式必须是 FULL、INCREMENTAL 或 REALTIME")
     private String syncMode;
 
     @Size(max = 100, message = "增量字段长度不能超过 100 个字符")

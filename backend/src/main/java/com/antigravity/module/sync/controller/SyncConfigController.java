@@ -101,9 +101,9 @@ public class SyncConfigController {
             return Result.badRequest("增量模式必须指定目标数据表");
         }
 
-        // 全量模式：targetTable 为空时自动使用源表名
+        // 全量或实时流模式：targetTable 为空时自动使用源表名
         String targetTable = request.getTargetTable();
-        if ("FULL".equals(request.getSyncMode())
+        if (("FULL".equals(request.getSyncMode()) || "REALTIME".equals(request.getSyncMode()))
                 && (targetTable == null || targetTable.isBlank())) {
             targetTable = request.getSourceTable();
         }

@@ -85,7 +85,7 @@ public class SeaTunnelConfigBuilder {
     private ObjectNode buildEnv(SyncConfig config) {
         ObjectNode env = objectMapper.createObjectNode();
         env.put("job.name", "sync_" + config.getName() + "_" + System.currentTimeMillis());
-        env.put("job.mode", "BATCH");
+        env.put("job.mode", "REALTIME".equalsIgnoreCase(config.getSyncMode()) ? "STREAM" : "BATCH");
         return env;
     }
 
@@ -94,6 +94,13 @@ public class SeaTunnelConfigBuilder {
      */
     private ObjectNode buildSource(SyncConfig config, DbConnection sourceDb,
                                    DatabaseDialect dialect, List<FieldMapping> mappings) {
+        if ("REALTIME".equalsIgnoreCase(config.getSyncMode())) {
+            if (!"MYSQL".equalsIgnoreCase(sourceDb.getDbType())) {
+                throw BusinessException.of("实时同步当前仅支持 MySQL 数据源（基于 MySQL-CDC 实时监听）");
+            }
+            return buildCdcSource(config, sourceDb);
+        }
+
         ObjectNode source = objectMapper.createObjectNode();
         source.put("plugin_name", "Jdbc");
 
@@ -107,6 +114,34 @@ public class SeaTunnelConfigBuilder {
         String query = buildSourceQuery(config, dialect, mappings);
         source.put("query", query);
 
+        return source;
+    }
+
+    /**
+     * 构建 MySQL-CDC 实时流数据源配置
+     */
+    private ObjectNode buildCdcSource(SyncConfig config, DbConnection sourceDb) {
+        ObjectNode source = objectMapper.createObjectNode();
+        source.put("plugin_name", "MySQL-CDC");
+        source.put("parallelism", 1);
+        source.put("server-id", 5400 + (int) (Math.random() * 100)); // 随机生成 server-id 范围，避免冲突
+
+        // base-url 格式为 jdbc:mysql://host:port/databaseName
+        String baseUrl = String.format("jdbc:mysql://%s:%d/%s", 
+                sourceDb.getHost(), sourceDb.getPort(), sourceDb.getDatabaseName());
+        source.put("base-url", baseUrl);
+        source.put("username", sourceDb.getUsername());
+        source.put("password", sourceDb.getPassword());
+
+        ArrayNode dbNames = objectMapper.createArrayNode();
+        dbNames.add(sourceDb.getDatabaseName());
+        source.set("database-names", dbNames);
+
+        ArrayNode tableNames = objectMapper.createArrayNode();
+        tableNames.add(sourceDb.getDatabaseName() + "." + config.getSourceTable());
+        source.set("table-names", tableNames);
+
+        source.put("startup.mode", "initial"); // initial 模式会先读存量快照，再平滑读取 binlog 实时流
         return source;
     }
 
@@ -191,14 +226,19 @@ public class SeaTunnelConfigBuilder {
         // 自动建表
         sink.put("generate_sink_sql", true);
 
+        boolean isRealtime = "REALTIME".equalsIgnoreCase(config.getSyncMode());
         boolean isFullSync = "FULL".equalsIgnoreCase(config.getSyncMode());
         boolean hasFieldMappings = mappings != null && !mappings.isEmpty();
 
         // Save Mode 配置
         // 自动建表策略：
+        //   - 实时流同步：不删表且追加数据（保留结构并持续应用增量变动）
         //   - 全量同步且无字段映射：使用 RECREATE_SCHEMA 强制重建目标表（先删后建，保证结构完全一致）
-        //   - 其他情况：使用 CREATE_SCHEMA_WHEN_NOT_EXIST（不存在则自动建表，存在则保留结构），以支持目标表不存在时自动创建
-        if (isFullSync && !hasFieldMappings) {
+        //   - 其他情况：使用 CREATE_SCHEMA_WHEN_NOT_EXIST（不存在则自动建表，存在则保留结构）
+        if (isRealtime) {
+            sink.put("schema_save_mode", "CREATE_SCHEMA_WHEN_NOT_EXIST");
+            sink.put("data_save_mode", "APPEND_DATA");
+        } else if (isFullSync && !hasFieldMappings) {
             sink.put("schema_save_mode", "RECREATE_SCHEMA");
             sink.put("data_save_mode", "DROP_DATA");
         } else if (isFullSync) {
