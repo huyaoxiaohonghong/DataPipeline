@@ -195,18 +195,17 @@ public class SeaTunnelConfigBuilder {
         boolean hasFieldMappings = mappings != null && !mappings.isEmpty();
 
         // Save Mode 配置
-        // 全量同步 + 无字段映射 = 自动建表模式：
-        //   使用 RECREATE_SCHEMA 让 SeaTunnel 自动根据源表结构在目标库创建表
-        //   （先删后建，确保目标表结构与源表一致）
-        // 其他情况：使用 IGNORE 跳过 Schema 处理（目标表需预先存在）
+        // 自动建表策略：
+        //   - 全量同步且无字段映射：使用 RECREATE_SCHEMA 强制重建目标表（先删后建，保证结构完全一致）
+        //   - 其他情况：使用 CREATE_SCHEMA_WHEN_NOT_EXIST（不存在则自动建表，存在则保留结构），以支持目标表不存在时自动创建
         if (isFullSync && !hasFieldMappings) {
             sink.put("schema_save_mode", "RECREATE_SCHEMA");
             sink.put("data_save_mode", "DROP_DATA");
         } else if (isFullSync) {
-            sink.put("schema_save_mode", "IGNORE");
+            sink.put("schema_save_mode", "CREATE_SCHEMA_WHEN_NOT_EXIST");
             sink.put("data_save_mode", "DROP_DATA");
         } else {
-            sink.put("schema_save_mode", "IGNORE");
+            sink.put("schema_save_mode", "CREATE_SCHEMA_WHEN_NOT_EXIST");
             sink.put("data_save_mode", "APPEND_DATA");
         }
 
