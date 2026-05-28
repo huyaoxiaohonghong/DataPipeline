@@ -1,6 +1,8 @@
 package com.antigravity.module.datasource.service.impl;
 
 import com.antigravity.common.BusinessException;
+import com.antigravity.module.sync.engine.dialect.DatabaseDialect;
+import com.antigravity.module.sync.engine.dialect.DatabaseDialectFactory;
 import com.antigravity.common.PageResult;
 import com.antigravity.module.datasource.entity.DbConnection;
 import com.antigravity.module.datasource.mapper.DbConnectionMapper;
@@ -167,41 +169,29 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
 
     @Override
     public List<String> getSupportedDbTypes() {
-        return List.of("MYSQL", "POSTGRESQL", "ORACLE", "SQLSERVER");
+        return DatabaseDialectFactory.getSupportedTypes();
     }
 
     // ==================== 私有方法 ====================
 
     /**
      * 根据数据库类型构建 JDBC URL
+     * <p>
+     * 委托给 {@link DatabaseDialect} 方言实现，消除重复的 switch 逻辑。
      */
     public static String buildJdbcUrl(String dbType, String host, int port, String databaseName) {
-        return switch (dbType.toUpperCase()) {
-            case "MYSQL" -> String.format(
-                    "jdbc:mysql://%s:%d/%s?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true",
-                    host, port, databaseName);
-            case "POSTGRESQL" -> String.format(
-                    "jdbc:postgresql://%s:%d/%s",
-                    host, port, databaseName);
-            case "ORACLE" -> String.format(
-                    "jdbc:oracle:thin:@%s:%d:%s",
-                    host, port, databaseName);
-            case "SQLSERVER" -> String.format(
-                    "jdbc:sqlserver://%s:%d;databaseName=%s;trustServerCertificate=true",
-                    host, port, databaseName);
-            default -> throw BusinessException.of("不支持的数据库类型: " + dbType);
-        };
+        DatabaseDialect dialect = DatabaseDialectFactory.getDialect(dbType);
+        return dialect.buildJdbcUrl(host, port, databaseName);
     }
 
     /**
      * 获取 Schema（不同数据库的 schema 取法不同）
+     * <p>
+     * 委托给 {@link DatabaseDialect} 方言实现。
      */
     private String getSchema(String dbType, String databaseName) {
-        return switch (dbType.toUpperCase()) {
-            case "POSTGRESQL" -> "public";
-            case "ORACLE" -> databaseName.toUpperCase();
-            default -> null;
-        };
+        DatabaseDialect dialect = DatabaseDialectFactory.getDialect(dbType);
+        return dialect.getDefaultSchema(databaseName);
     }
 
 }

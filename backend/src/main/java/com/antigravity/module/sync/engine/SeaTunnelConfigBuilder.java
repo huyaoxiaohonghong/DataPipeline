@@ -2,7 +2,8 @@ package com.antigravity.module.sync.engine;
 
 import com.antigravity.common.BusinessException;
 import com.antigravity.module.datasource.entity.DbConnection;
-import com.antigravity.module.datasource.service.impl.DbConnectionServiceImpl;
+import com.antigravity.module.sync.engine.dialect.DatabaseDialect;
+import com.antigravity.module.sync.engine.dialect.DatabaseDialectFactory;
 import com.antigravity.module.sync.entity.FieldMapping;
 import com.antigravity.module.sync.entity.SyncConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,7 +19,10 @@ import java.util.List;
  * SeaTunnel Job 配置构建器
  * <p>
  * 根据同步配置、数据库连接和字段映射信息，
- * 构建 SeaTunnel 2.3.3 所需的 Job JSON 配置。
+ * 构建 SeaTunnel 2.3.8 所需的 Job JSON 配置。
+ * <p>
+ * 通过 {@link DatabaseDialect} 策略模式处理不同数据库之间的差异，
+ * 包括 JDBC URL 构建、驱动类名、表名格式化、Sink database 字段等。
  *
  * @author Antigravity Team
  * @since 1.0.0
@@ -48,8 +52,9 @@ public class SeaTunnelConfigBuilder {
             root.set("env", env);
 
             // source 配置
+            DatabaseDialect sourceDialect = DatabaseDialectFactory.getDialect(sourceDb.getDbType());
             ArrayNode sourceArray = objectMapper.createArrayNode();
-            sourceArray.add(buildSource(config, sourceDb, mappings));
+            sourceArray.add(buildSource(config, sourceDb, sourceDialect, mappings));
             root.set("source", sourceArray);
 
             // transform（字段映射转换）
@@ -60,8 +65,9 @@ public class SeaTunnelConfigBuilder {
             }
 
             // sink 配置
+            DatabaseDialect targetDialect = DatabaseDialectFactory.getDialect(targetDb.getDbType());
             ArrayNode sinkArray = objectMapper.createArrayNode();
-            sinkArray.add(buildSink(config, targetDb, mappings));
+            sinkArray.add(buildSink(config, targetDb, targetDialect, mappings));
             root.set("sink", sinkArray);
 
             String configJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
@@ -86,20 +92,19 @@ public class SeaTunnelConfigBuilder {
     /**
      * 构建 source 配置
      */
-    private ObjectNode buildSource(SyncConfig config, DbConnection sourceDb, List<FieldMapping> mappings) {
+    private ObjectNode buildSource(SyncConfig config, DbConnection sourceDb,
+                                   DatabaseDialect dialect, List<FieldMapping> mappings) {
         ObjectNode source = objectMapper.createObjectNode();
-        String pluginName = getJdbcPluginName(sourceDb.getDbType());
-        source.put("plugin_name", pluginName);
+        source.put("plugin_name", "Jdbc");
 
-        String jdbcUrl = DbConnectionServiceImpl.buildJdbcUrl(
-                sourceDb.getDbType(), sourceDb.getHost(), sourceDb.getPort(), sourceDb.getDatabaseName());
+        String jdbcUrl = dialect.buildJdbcUrl(sourceDb.getHost(), sourceDb.getPort(), sourceDb.getDatabaseName());
         source.put("url", jdbcUrl);
-        source.put("driver", getJdbcDriver(sourceDb.getDbType()));
+        source.put("driver", dialect.getDriverClassName());
         source.put("user", sourceDb.getUsername());
         source.put("password", sourceDb.getPassword());
 
         // 构建查询 SQL
-        String query = buildSourceQuery(config, sourceDb, mappings);
+        String query = buildSourceQuery(config, dialect, mappings);
         source.put("query", query);
 
         return source;
@@ -108,7 +113,7 @@ public class SeaTunnelConfigBuilder {
     /**
      * 构建 source 查询 SQL
      */
-    private String buildSourceQuery(SyncConfig config, DbConnection sourceDb, List<FieldMapping> mappings) {
+    private String buildSourceQuery(SyncConfig config, DatabaseDialect dialect, List<FieldMapping> mappings) {
         StringBuilder sql = new StringBuilder("SELECT ");
 
         if (mappings != null && !mappings.isEmpty()) {
@@ -121,7 +126,9 @@ public class SeaTunnelConfigBuilder {
             sql.append("*");
         }
 
-        sql.append(" FROM ").append(config.getSourceTable());
+        // 使用方言格式化源表名
+        String tableName = dialect.formatSourceTable(config.getSourceTable());
+        sql.append(" FROM ").append(tableName);
 
         // 增量模式添加 WHERE 条件
         if ("INCREMENTAL".equalsIgnoreCase(config.getSyncMode()) && config.getIncrementalField() != null) {
@@ -154,35 +161,33 @@ public class SeaTunnelConfigBuilder {
 
     /**
      * 构建 sink 配置
+     * <p>
+     * 通过 {@link DatabaseDialect} 处理不同数据库的差异：
+     * <ul>
+     *   <li>表名格式化：PostgreSQL 需要 schema.table，MySQL 直接用表名</li>
+     *   <li>database 字段：PostgreSQL 不设置（避免三段式表名），MySQL/Oracle 需要设置</li>
+     * </ul>
      */
-    private ObjectNode buildSink(SyncConfig config, DbConnection targetDb, List<FieldMapping> mappings) {
+    private ObjectNode buildSink(SyncConfig config, DbConnection targetDb,
+                                 DatabaseDialect dialect, List<FieldMapping> mappings) {
         ObjectNode sink = objectMapper.createObjectNode();
-        String pluginName = getJdbcPluginName(targetDb.getDbType());
-        sink.put("plugin_name", pluginName);
+        sink.put("plugin_name", "Jdbc");
 
-        String jdbcUrl = DbConnectionServiceImpl.buildJdbcUrl(
-                targetDb.getDbType(), targetDb.getHost(), targetDb.getPort(), targetDb.getDatabaseName());
+        String jdbcUrl = dialect.buildJdbcUrl(targetDb.getHost(), targetDb.getPort(), targetDb.getDatabaseName());
         sink.put("url", jdbcUrl);
-        sink.put("driver", getJdbcDriver(targetDb.getDbType()));
+        sink.put("driver", dialect.getDriverClassName());
         sink.put("user", targetDb.getUsername());
         sink.put("password", targetDb.getPassword());
-        // PostgreSQL 特殊处理：
-        // SeaTunnel 的 PostgresCatalog 从 JDBC URL 解析 database name 构建 TablePath，
-        // 会覆盖 config 中 database 字段的值。因此 database 字段必须保留真实数据库名。
-        // 要控制 SQL 中的 schema 前缀（如 INSERT INTO "public"."student"），
-        // 需要在 table 字段中显式指定 schema：SeaTunnel 会将 "public.student"
-        // 解析为 schema=public, table=student。
-        sink.put("database", targetDb.getDatabaseName());
-        if ("POSTGRESQL".equalsIgnoreCase(targetDb.getDbType())) {
-            String tableName = config.getTargetTable();
-            // 如果用户未指定 schema 前缀，自动添加 public schema
-            if (!tableName.contains(".")) {
-                tableName = "public." + tableName;
-            }
-            sink.put("table", tableName);
-        } else {
-            sink.put("table", config.getTargetTable());
+
+        // 根据方言决定是否设置 database 字段
+        // PostgreSQL 不能设置此字段，否则 SeaTunnel 会生成三段式表名导致错误
+        if (dialect.includeDatabaseInSink()) {
+            sink.put("database", targetDb.getDatabaseName());
         }
+
+        // 使用方言格式化 Sink 端表名
+        String sinkTable = dialect.formatSinkTable(config.getTargetTable());
+        sink.put("table", sinkTable);
 
         // 自动建表
         sink.put("generate_sink_sql", true);
@@ -207,32 +212,6 @@ public class SeaTunnelConfigBuilder {
         }
 
         return sink;
-    }
-
-    /**
-     * 获取 JDBC 连接器插件名
-     */
-    private String getJdbcPluginName(String dbType) {
-        return switch (dbType.toUpperCase()) {
-            case "MYSQL" -> "Jdbc";
-            case "POSTGRESQL" -> "Jdbc";
-            case "ORACLE" -> "Jdbc";
-            case "SQLSERVER" -> "Jdbc";
-            default -> throw BusinessException.of("不支持的数据库类型: " + dbType);
-        };
-    }
-
-    /**
-     * 获取 JDBC 驱动类名
-     */
-    private String getJdbcDriver(String dbType) {
-        return switch (dbType.toUpperCase()) {
-            case "MYSQL" -> "com.mysql.cj.jdbc.Driver";
-            case "POSTGRESQL" -> "org.postgresql.Driver";
-            case "ORACLE" -> "oracle.jdbc.OracleDriver";
-            case "SQLSERVER" -> "com.microsoft.sqlserver.jdbc.SQLServerDriver";
-            default -> throw BusinessException.of("不支持的数据库类型: " + dbType);
-        };
     }
 
     /**
