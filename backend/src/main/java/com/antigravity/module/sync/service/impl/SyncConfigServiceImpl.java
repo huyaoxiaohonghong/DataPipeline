@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +33,7 @@ import java.util.Optional;
 public class SyncConfigServiceImpl extends ServiceImpl<SyncConfigMapper, SyncConfig> implements SyncConfigService {
 
     private final FieldMappingMapper fieldMappingMapper;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public Optional<SyncConfig> findById(Long id) {
@@ -57,9 +59,34 @@ public class SyncConfigServiceImpl extends ServiceImpl<SyncConfigMapper, SyncCon
         return this.count(wrapper) > 0;
     }
 
+    private void cleanupSoftDeletedConfig(String name) {
+        if (name == null || name.isBlank()) {
+            return;
+        }
+        try {
+            // 查询同名且已软删除的配置 ID
+            String querySql = "SELECT id FROM sys_sync_config WHERE name = ? AND is_deleted = 1";
+            List<Long> ids = jdbcTemplate.query(querySql, (rs, rowNum) -> rs.getLong("id"), name);
+            if (ids != null && !ids.isEmpty()) {
+                for (Long oldId : ids) {
+                    log.info("发现同名已软删除配置(id={})，执行物理清除以避免唯一键冲突...", oldId);
+                    // 删除关联的字段映射
+                    jdbcTemplate.update("DELETE FROM sys_field_mapping WHERE config_id = ?", oldId);
+                    // 物理删除该配置
+                    jdbcTemplate.update("DELETE FROM sys_sync_config WHERE id = ?", oldId);
+                }
+            }
+        } catch (Exception e) {
+            log.error("清理软删除配置失败: {}", e.getMessage());
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public SyncConfig createConfig(SyncConfig config, List<FieldMappingDTO> mappings) {
+        // 自动清理同名的已软删除的配置，防止唯一键冲突
+        cleanupSoftDeletedConfig(config.getName());
+
         // 设置默认值
         if (config.getEnabled() == null) {
             config.setEnabled(true);
@@ -88,6 +115,9 @@ public class SyncConfigServiceImpl extends ServiceImpl<SyncConfigMapper, SyncCon
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateConfig(SyncConfig config, List<FieldMappingDTO> mappings) {
+        // 自动清理同名的已软删除的配置，防止唯一键冲突
+        cleanupSoftDeletedConfig(config.getName());
+
         boolean updated = this.updateById(config);
 
         // 如果提供了字段映射，则全量替换

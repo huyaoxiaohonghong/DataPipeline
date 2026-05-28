@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.sql.*;
 import java.util.*;
@@ -29,6 +30,8 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbConnection> implements DbConnectionService {
+
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public Optional<DbConnection> findById(Long id) {
@@ -61,9 +64,29 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
         return this.count(wrapper) > 0;
     }
 
+    private void cleanupSoftDeletedConnection(String name) {
+        if (name == null || name.isBlank()) {
+            return;
+        }
+        try {
+            // 查询同名且已软删除的连接 ID
+            String querySql = "SELECT id FROM sys_db_connection WHERE name = ? AND is_deleted = 1";
+            List<Long> ids = jdbcTemplate.query(querySql, (rs, rowNum) -> rs.getLong("id"), name);
+            if (ids != null && !ids.isEmpty()) {
+                for (Long oldId : ids) {
+                    log.info("发现同名已软删除数据连接(id={})，执行物理清除以避免唯一键冲突...", oldId);
+                    jdbcTemplate.update("DELETE FROM sys_db_connection WHERE id = ?", oldId);
+                }
+            }
+        } catch (Exception e) {
+            log.error("清理软删除数据连接失败: {}", e.getMessage());
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public DbConnection createConnection(DbConnection connection) {
+        cleanupSoftDeletedConnection(connection.getName());
         if (connection.getEnabled() == null) {
             connection.setEnabled(true);
         }
@@ -75,6 +98,7 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateConnection(DbConnection connection) {
+        cleanupSoftDeletedConnection(connection.getName());
         return this.updateById(connection);
     }
 
