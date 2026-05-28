@@ -297,12 +297,12 @@ const handleTargetFieldSelect = (val: string, index: number) => {
 const nextStep = () => {
   if (currentStep.value === 0) {
     if (!formModel.value.name.trim()) return message.warning('请输入同步配置名称')
-    if (formModel.value.syncMode === 'INCREMENTAL' && !formModel.value.incrementalField) {
-      return message.warning('增量模式下必须指定增量字段！')
-    }
   } else if (currentStep.value === 1) {
     if (!formModel.value.sourceDbId) return message.warning('请选择源数据库')
     if (!formModel.value.sourceTable) return message.warning('请选择源数据表')
+    if (formModel.value.syncMode === 'INCREMENTAL' && !formModel.value.incrementalField) {
+      return message.warning('增量模式下必须指定增量字段！')
+    }
   } else if (currentStep.value === 2) {
     if (!formModel.value.targetDbId) return message.warning('请选择目标数据库')
     // 增量模式下目标表必选
@@ -401,32 +401,12 @@ const handleSave = async () => {
             <a-form-item label="描述">
               <a-textarea v-model:value="formModel.description" :rows="3" placeholder="配置的功能、作者等说明信息" />
             </a-form-item>
-            <a-row :gutter="16">
-              <a-col :span="12">
-                <a-form-item label="同步模式" required>
-                  <a-select v-model:value="formModel.syncMode">
-                    <a-select-option value="FULL">FULL (全量同步)</a-select-option>
-                    <a-select-option value="INCREMENTAL">INCREMENTAL (增量同步)</a-select-option>
-                  </a-select>
-                </a-form-item>
-              </a-col>
-              <a-col :span="12" v-if="formModel.syncMode === 'INCREMENTAL'">
-                <a-form-item label="增量字段 (如 updated_at, id)" required>
-                  <a-select
-                    v-model:value="formModel.incrementalField"
-                    placeholder="请选择增量过滤字段 (步骤二加载后可用)"
-                    show-search
-                  >
-                    <a-select-option v-for="col in sourceColumns" :key="col.columnName" :value="col.columnName">
-                      {{ col.columnName }} ({{ col.dataType }})
-                    </a-select-option>
-                  </a-select>
-                  <template #extra>
-                    <span class="step-info"><InfoCircleOutlined class="mr-8" />仅支持数值、时间类型的字段进行增量过滤</span>
-                  </template>
-                </a-form-item>
-              </a-col>
-            </a-row>
+            <a-form-item label="同步模式" required>
+              <a-select v-model:value="formModel.syncMode">
+                <a-select-option value="FULL">FULL (全量同步)</a-select-option>
+                <a-select-option value="INCREMENTAL">INCREMENTAL (增量同步)</a-select-option>
+              </a-select>
+            </a-form-item>
           </a-form>
         </div>
 
@@ -456,6 +436,21 @@ const handleSave = async () => {
                   {{ tbl }}
                 </a-select-option>
               </a-select>
+            </a-form-item>
+            <a-form-item v-if="formModel.syncMode === 'INCREMENTAL'" label="增量字段 (如 updated_at, id)" required>
+              <a-select
+                v-model:value="formModel.incrementalField"
+                placeholder="请选择增量过滤字段"
+                show-search
+                :disabled="sourceColumns.length === 0"
+              >
+                <a-select-option v-for="col in sourceColumns" :key="col.columnName" :value="col.columnName">
+                  {{ col.columnName }} ({{ col.dataType }})
+                </a-select-option>
+              </a-select>
+              <template #extra>
+                <span class="step-info"><InfoCircleOutlined class="mr-8" />仅支持数值、时间类型的字段进行增量过滤</span>
+              </template>
             </a-form-item>
 
             <div class="page-card schema-preview mt-16" v-if="sourceColumns.length > 0">
