@@ -28,6 +28,7 @@ const visible = computed({
 const loading = ref(false)
 const saving = ref(false)
 const currentStep = ref(0)
+const transformType = ref<'mapping' | 'sql'>('mapping')
 
 // 数据库连接列表
 const dbConnections = ref<DbConnection[]>([])
@@ -42,6 +43,7 @@ const formModel = ref({
   description: '',
   syncMode: 'FULL' as 'FULL' | 'INCREMENTAL' | 'REALTIME',
   incrementalField: '',
+  transformSql: '',
   sourceDbId: undefined as number | undefined,
   sourceTable: '',
   targetDbId: undefined as number | undefined,
@@ -53,6 +55,7 @@ const formModel = ref({
 watch(visible, async (isOpen) => {
   if (isOpen) {
     currentStep.value = 0
+    transformType.value = 'mapping'
     await fetchDbConnections()
     if (props.configId) {
       await fetchConfigDetail(props.configId)
@@ -69,6 +72,7 @@ const resetForm = () => {
     description: '',
     syncMode: 'FULL',
     incrementalField: '',
+    transformSql: '',
     sourceDbId: undefined,
     sourceTable: '',
     targetDbId: undefined,
@@ -93,11 +97,19 @@ const fetchConfigDetail = async (id: number) => {
         description: config.description || '',
         syncMode: config.syncMode,
         incrementalField: config.incrementalField || '',
+        transformSql: config.transformSql || '',
         sourceDbId: config.sourceDbId,
         sourceTable: config.sourceTable,
         targetDbId: config.targetDbId,
         targetTable: config.targetTable,
         fieldMappings: config.fieldMappings || []
+      }
+      
+      // 根据是否有 transformSql 初始化模式
+      if (config.transformSql && config.transformSql.trim() !== '') {
+        transformType.value = 'sql'
+      } else {
+        transformType.value = 'mapping'
       }
       
       // 加载对应的表和字段
@@ -328,16 +340,24 @@ const prevStep = () => {
 
 // 保存配置
 const handleSave = async () => {
-  // 全量自动建表模式允许空映射，增量模式必须有映射
-  if (!isAutoCreateMode.value && formModel.value.fieldMappings.length === 0) {
-    return message.warning('请配置至少一个字段映射！')
+  // 校验 SQL 模式下 SQL 不能为空
+  if (transformType.value === 'sql' && (!formModel.value.transformSql || !formModel.value.transformSql.trim())) {
+    return message.warning('请编写实时计算 SQL 加工表达式！')
   }
 
-  // 校验映射中是否包含空字段（仅非空映射列表时校验）
-  if (formModel.value.fieldMappings.length > 0) {
-    const hasInvalid = formModel.value.fieldMappings.some(m => !m.sourceField || !m.targetField)
-    if (hasInvalid) {
-      return message.warning('映射字段列表中源字段或目标字段不能为空')
+  // 常规映射模式下的校验
+  if (transformType.value === 'mapping') {
+    // 全量自动建表模式允许空映射，增量模式必须有映射
+    if (!isAutoCreateMode.value && formModel.value.fieldMappings.length === 0) {
+      return message.warning('请配置至少一个字段映射！')
+    }
+
+    // 校验映射中是否包含空字段（仅非空映射列表时校验）
+    if (formModel.value.fieldMappings.length > 0) {
+      const hasInvalid = formModel.value.fieldMappings.some(m => !m.sourceField || !m.targetField)
+      if (hasInvalid) {
+        return message.warning('映射字段列表中源字段或目标字段不能为空')
+      }
     }
   }
 
@@ -346,8 +366,14 @@ const handleSave = async () => {
     // 构建提交数据
     const submitData: any = { ...formModel.value }
 
+    if (transformType.value === 'sql') {
+      submitData.fieldMappings = [] // SQL 模式下，清空字段映射，由 SQL 决定映射
+    } else {
+      submitData.transformSql = ''  // 映射模式下，清空 SQL 表达式
+    }
+
     // 全量自动建表模式：不传 fieldMappings，让 SeaTunnel 自动推导
-    if (isAutoCreateMode.value && !formModel.value.targetTable) {
+    if (isAutoCreateMode.value && !formModel.value.targetTable && transformType.value === 'mapping') {
       submitData.fieldMappings = undefined
     }
 
@@ -521,56 +547,100 @@ const handleSave = async () => {
           </a-form>
         </div>
 
-        <!-- 步骤 3: 字段映射配置 -->
+        <!-- 步骤 3: 字段映射配置与 SQL 实时计算 -->
         <div v-if="currentStep === 3">
-          <!-- 全量自动建表模式：只读预览 -->
-          <template v-if="isAutoCreateMode && !formModel.targetTable">
+          <!-- 模式切换选择器 -->
+          <div class="flex-center mb-16">
+            <a-radio-group v-model:value="transformType" button-style="solid">
+              <a-radio-button value="mapping">常规字段映射</a-radio-button>
+              <a-radio-button value="sql">SQL 实时计算/加工</a-radio-button>
+            </a-radio-group>
+          </div>
+
+          <!-- A. SQL 实时计算模式 -->
+          <template v-if="transformType === 'sql'">
             <div class="auto-create-banner page-card mb-16">
               <div class="banner-content">
-                <ThunderboltOutlined class="banner-icon" />
+                <SlidersOutlined class="banner-icon" style="color: var(--cta-color);" />
                 <div>
-                  <h4>自动建表模式</h4>
-                  <p>SeaTunnel 将自动在目标库中创建表 <a-tag color="blue">{{ formModel.sourceTable }}</a-tag>，字段结构从源表自动推导，无需手动配置映射。</p>
+                  <h4>SQL 实时计算与流加工</h4>
+                  <p>您可以使用标准 SQL 语法对流动的数据进行加工、计算、重命名或过滤。</p>
                 </div>
               </div>
             </div>
 
-            <div class="mapping-toolbar flex-between mb-16">
-              <div class="left flex">
-                <span class="title"><SlidersOutlined class="mr-8 text-primary" />源表结构预览（将同步至目标库）</span>
-                <a-tag color="green" class="ml-8">共 {{ sourceColumns.length }} 个字段</a-tag>
-              </div>
-            </div>
-
-            <div class="mapping-table-container">
-              <div class="mapping-table-header flex">
-                <div class="col-field">字段名</div>
-                <div class="col-arrow"></div>
-                <div class="col-field">字段类型</div>
-                <div class="col-expr">说明</div>
-              </div>
-              <div class="mapping-rows">
-                <div v-for="col in sourceColumns" :key="col.columnName" class="mapping-row flex">
-                  <div class="col-field">
-                    <a-tag :color="col.isPrimaryKey ? 'orange' : 'default'">{{ col.columnName }}</a-tag>
+            <a-form layout="vertical">
+              <a-form-item label="加工 SQL 表达式" required>
+                <a-textarea
+                  v-model:value="formModel.transformSql"
+                  :rows="6"
+                  placeholder="SELECT id, name, price * count AS total_price FROM source_data"
+                  style="font-family: SFMono-Regular, Consolas, monospace; font-size: 13px;"
+                />
+                <template #extra>
+                  <div class="step-info mt-8">
+                    <p class="mb-4"><strong>💡 编写指南：</strong></p>
+                    <ul class="pl-16 mb-0" style="list-style-type: disc;">
+                      <li>必须从虚拟表 <code>source_data</code> 中进行查询（代表源端输入流）。</li>
+                      <li>支持标准的 SQL 函数与列运算（如列相加、别名、类型转换等）。</li>
+                      <li>示例：<code>SELECT id, name, score + 5 AS score, UPPER(status) AS status FROM source_data WHERE score >= 60</code></li>
+                    </ul>
                   </div>
-                  <div class="col-arrow flex-center">
-                    <ArrowRightOutlined class="text-primary" />
-                  </div>
-                  <div class="col-field">
-                    <span class="type-display">{{ col.dataType }}</span>
-                  </div>
-                  <div class="col-expr">
-                    <span class="step-info" v-if="col.isPrimaryKey">主键</span>
-                    <span class="step-info" v-else>自动映射</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+                </template>
+              </a-form-item>
+            </a-form>
           </template>
 
-          <!-- 手动映射模式（增量同步 或 全量+指定了目标表） -->
+          <!-- B. 常规映射模式 -->
           <template v-else>
+            <!-- B1. 全量自动建表模式：只读预览 -->
+            <template v-if="isAutoCreateMode && !formModel.targetTable">
+              <div class="auto-create-banner page-card mb-16">
+                <div class="banner-content">
+                  <ThunderboltOutlined class="banner-icon" />
+                  <div>
+                    <h4>自动建表模式</h4>
+                    <p>SeaTunnel 将自动在目标库中创建表 <a-tag color="blue">{{ formModel.sourceTable }}</a-tag>，字段结构从源表自动推导，无需手动配置映射。</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mapping-toolbar flex-between mb-16">
+                <div class="left flex">
+                  <span class="title"><SlidersOutlined class="mr-8 text-primary" />源表结构预览（将同步至目标库）</span>
+                  <a-tag color="green" class="ml-8">共 {{ sourceColumns.length }} 个字段</a-tag>
+                </div>
+              </div>
+
+              <div class="mapping-table-container">
+                <div class="mapping-table-header flex">
+                  <div class="col-field">字段名</div>
+                  <div class="col-arrow"></div>
+                  <div class="col-field">字段类型</div>
+                  <div class="col-expr">说明</div>
+                </div>
+                <div class="mapping-rows">
+                  <div v-for="col in sourceColumns" :key="col.columnName" class="mapping-row flex">
+                    <div class="col-field">
+                      <a-tag :color="col.isPrimaryKey ? 'orange' : 'default'">{{ col.columnName }}</a-tag>
+                    </div>
+                    <div class="col-arrow flex-center">
+                      <ArrowRightOutlined class="text-primary" />
+                    </div>
+                    <div class="col-field">
+                      <span class="type-display">{{ col.dataType }}</span>
+                    </div>
+                    <div class="col-expr">
+                      <span class="step-info" v-if="col.isPrimaryKey">主键</span>
+                      <span class="step-info" v-else>自动映射</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <!-- B2. 手动映射模式（增量同步 或 全量+指定了目标表） -->
+            <template v-else>
             <div class="mapping-toolbar flex-between mb-16">
               <div class="left flex">
                 <span class="title"><SlidersOutlined class="mr-8 text-primary" />映射字段矩阵</span>
@@ -655,7 +725,8 @@ const handleSave = async () => {
               </div>
             </div>
           </template>
-        </div>
+        </template>
+      </div>
       </div>
 
       <!-- 底部控制按钮排 -->

@@ -32,6 +32,7 @@ public class SyncConfigVO {
     private String targetTable;
     private String syncMode;
     private String incrementalField;
+    private String transformSql;
     private String lastSyncValue;
     private Boolean enabled;
     private LocalDateTime createTime;
@@ -55,6 +56,7 @@ public class SyncConfigVO {
                 .targetTable(entity.getTargetTable())
                 .syncMode(entity.getSyncMode())
                 .incrementalField(entity.getIncrementalField())
+                .transformSql(entity.getTransformSql())
                 .lastSyncValue(entity.getLastSyncValue())
                 .enabled(entity.getEnabled())
                 .createTime(entity.getCreateTime())

@@ -25,8 +25,9 @@ export interface SyncConfigVO {
   targetDbId: number
   targetDbName?: string
   targetTable: string
-  syncMode: 'FULL' | 'INCREMENTAL'
+  syncMode: 'FULL' | 'INCREMENTAL' | 'REALTIME'
   incrementalField?: string
+  transformSql?: string
   lastSyncValue?: string
   enabled: boolean
   createTime?: string
@@ -41,8 +42,9 @@ export interface SyncConfigCreateRequest {
   sourceTable: string
   targetDbId: number
   targetTable?: string
-  syncMode: 'FULL' | 'INCREMENTAL'
+  syncMode: 'FULL' | 'INCREMENTAL' | 'REALTIME'
   incrementalField?: string
+  transformSql?: string
   fieldMappings?: FieldMappingDTO[]
 }
 
@@ -53,8 +55,9 @@ export interface SyncConfigUpdateRequest {
   sourceTable?: string
   targetDbId?: number
   targetTable?: string
-  syncMode?: 'FULL' | 'INCREMENTAL'
+  syncMode?: 'FULL' | 'INCREMENTAL' | 'REALTIME'
   incrementalField?: string
+  transformSql?: string
   enabled?: boolean
   fieldMappings?: FieldMappingDTO[]
 }

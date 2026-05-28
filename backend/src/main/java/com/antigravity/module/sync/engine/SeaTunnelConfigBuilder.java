@@ -57,10 +57,17 @@ public class SeaTunnelConfigBuilder {
             sourceArray.add(buildSource(config, sourceDb, sourceDialect, mappings));
             root.set("source", sourceArray);
 
-            // transform（字段映射转换）
-            if (mappings != null && !mappings.isEmpty() && hasFieldRename(mappings)) {
+            // transform（字段重命名 或 实时计算 SQL 转换）
+            boolean hasTransformSql = config.getTransformSql() != null && !config.getTransformSql().isBlank();
+            boolean hasFieldRename = mappings != null && !mappings.isEmpty() && hasFieldRename(mappings);
+
+            if (hasTransformSql || hasFieldRename) {
                 ArrayNode transformArray = objectMapper.createArrayNode();
-                transformArray.add(buildTransform(mappings));
+                if (hasTransformSql) {
+                    transformArray.add(buildSqlTransform(config));
+                } else {
+                    transformArray.add(buildTransform(mappings));
+                }
                 root.set("transform", transformArray);
             }
 
@@ -114,6 +121,10 @@ public class SeaTunnelConfigBuilder {
         String query = buildSourceQuery(config, dialect, mappings);
         source.put("query", query);
 
+        if (config.getTransformSql() != null && !config.getTransformSql().isBlank()) {
+            source.put("result_table_name", "source_data");
+        }
+
         return source;
     }
 
@@ -142,6 +153,11 @@ public class SeaTunnelConfigBuilder {
         source.set("table-names", tableNames);
 
         source.put("startup.mode", "initial"); // initial 模式会先读存量快照，再平滑读取 binlog 实时流
+        
+        if (config.getTransformSql() != null && !config.getTransformSql().isBlank()) {
+            source.put("result_table_name", "source_data");
+        }
+        
         return source;
     }
 
@@ -174,6 +190,18 @@ public class SeaTunnelConfigBuilder {
         }
 
         return sql.toString();
+    }
+
+    /**
+     * 构建 transform 配置（自定义 SQL 转换）
+     */
+    private ObjectNode buildSqlTransform(SyncConfig config) {
+        ObjectNode transform = objectMapper.createObjectNode();
+        transform.put("plugin_name", "Sql");
+        transform.put("source_table_name", "source_data");
+        transform.put("query", config.getTransformSql().trim());
+        transform.put("result_table_name", "transformed_data");
+        return transform;
     }
 
     /**
@@ -222,6 +250,11 @@ public class SeaTunnelConfigBuilder {
         // 使用方言格式化 Sink 端表名
         String sinkTable = dialect.formatSinkTable(config.getTargetTable());
         sink.put("table", sinkTable);
+
+        // 如果配置了实时计算 SQL，则从 transformed_data 数据流写入
+        if (config.getTransformSql() != null && !config.getTransformSql().isBlank()) {
+            sink.put("source_table_name", "transformed_data");
+        }
 
         // 自动建表
         sink.put("generate_sink_sql", true);

@@ -117,6 +117,7 @@ public class SyncConfigController {
         config.setTargetTable(targetTable);
         config.setSyncMode(request.getSyncMode());
         config.setIncrementalField(request.getIncrementalField());
+        config.setTransformSql(request.getTransformSql());
 
         SyncConfig created = syncConfigService.createConfig(config, request.getFieldMappings());
 
@@ -154,6 +155,7 @@ public class SyncConfigController {
         config.setTargetTable(request.getTargetTable() != null ? request.getTargetTable() : existing.getTargetTable());
         config.setSyncMode(request.getSyncMode() != null ? request.getSyncMode() : existing.getSyncMode());
         config.setIncrementalField(request.getIncrementalField() != null ? request.getIncrementalField() : existing.getIncrementalField());
+        config.setTransformSql(request.getTransformSql() != null ? request.getTransformSql() : existing.getTransformSql());
         config.setEnabled(request.getEnabled() != null ? request.getEnabled() : existing.getEnabled());
 
         boolean success = syncConfigService.updateConfig(config, request.getFieldMappings());

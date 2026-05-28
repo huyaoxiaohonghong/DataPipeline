@@ -46,6 +46,9 @@ public class SyncConfig extends BaseEntity {
     /** 增量字段（增量模式使用） */
     private String incrementalField;
 
+    /** 实时计算SQL表达式 */
+    private String transformSql;
+
     /** 上次增量同步的值 */
     private String lastSyncValue;
 

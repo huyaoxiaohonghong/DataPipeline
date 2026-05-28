@@ -43,6 +43,9 @@ public class SyncConfigCreateRequest {
     @Size(max = 100, message = "增量字段长度不能超过 100 个字符")
     private String incrementalField;
 
+    /** 实时计算SQL表达式（可选） */
+    private String transformSql;
+
     /** 字段映射列表 */
     @Valid
     private List<FieldMappingDTO> fieldMappings;

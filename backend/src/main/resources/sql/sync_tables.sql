@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS `sys_sync_config` (
     `target_table` VARCHAR(200) NOT NULL COMMENT '目标表名',
     `sync_mode` VARCHAR(20) NOT NULL DEFAULT 'FULL' COMMENT '同步模式：FULL-全量, INCREMENTAL-增量',
     `incremental_field` VARCHAR(100) DEFAULT NULL COMMENT '增量字段（增量模式使用）',
+    `transform_sql` TEXT DEFAULT NULL COMMENT '实时计算SQL表达式',
     `last_sync_value` VARCHAR(100) DEFAULT NULL COMMENT '上次增量同步的值',
     `enabled` TINYINT(1) DEFAULT 1 COMMENT '是否启用：0-禁用，1-启用',
     `is_deleted` TINYINT(1) DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
