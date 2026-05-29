@@ -92,7 +92,7 @@ public class SeaTunnelConfigBuilder {
     private ObjectNode buildEnv(SyncConfig config) {
         ObjectNode env = objectMapper.createObjectNode();
         env.put("job.name", "sync_" + config.getName() + "_" + System.currentTimeMillis());
-        env.put("job.mode", "REALTIME".equalsIgnoreCase(config.getSyncMode()) ? "STREAM" : "BATCH");
+        env.put("job.mode", "REALTIME".equalsIgnoreCase(config.getSyncMode()) ? "STREAMING" : "BATCH");
         return env;
     }
 
