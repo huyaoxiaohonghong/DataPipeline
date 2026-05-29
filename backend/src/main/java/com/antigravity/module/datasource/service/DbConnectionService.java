@@ -65,4 +65,13 @@ public interface DbConnectionService extends IService<DbConnection> {
      */
     List<String> getSupportedDbTypes();
 
+    /**
+     * 获取指定表的主键列名列表
+     *
+     * @param connectionId 连接ID
+     * @param tableName    表名
+     * @return 主键列名列表
+     */
+    List<String> getPrimaryKeys(Long connectionId, String tableName);
+
 }

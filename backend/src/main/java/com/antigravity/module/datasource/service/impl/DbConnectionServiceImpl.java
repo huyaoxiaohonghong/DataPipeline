@@ -196,6 +196,33 @@ public class DbConnectionServiceImpl extends ServiceImpl<DbConnectionMapper, DbC
         return DatabaseDialectFactory.getSupportedTypes();
     }
 
+    @Override
+    public List<String> getPrimaryKeys(Long connectionId, String tableName) {
+        DbConnection conn = this.getById(connectionId);
+        if (conn == null) {
+            throw BusinessException.of("数据库连接不存在");
+        }
+
+        String jdbcUrl = buildJdbcUrl(conn.getDbType(), conn.getHost(), conn.getPort(), conn.getDatabaseName());
+        List<String> primaryKeys = new ArrayList<>();
+
+        try (Connection connection = DriverManager.getConnection(jdbcUrl, conn.getUsername(), conn.getPassword())) {
+            DatabaseMetaData metaData = connection.getMetaData();
+            String catalog = connection.getCatalog();
+            String schema = getSchema(conn.getDbType(), conn.getDatabaseName());
+
+            try (ResultSet rs = metaData.getPrimaryKeys(catalog, schema, tableName)) {
+                while (rs.next()) {
+                    primaryKeys.add(rs.getString("COLUMN_NAME"));
+                }
+            }
+        } catch (SQLException e) {
+            log.error("获取主键信息失败: {}", e.getMessage());
+        }
+
+        return primaryKeys;
+    }
+
     // ==================== 私有方法 ====================
 
     /**
